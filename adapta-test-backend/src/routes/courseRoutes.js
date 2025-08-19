@@ -3,7 +3,7 @@ const router = express.Router();
 const sectionRoutes = require('./sectionRoutes');
 
 // Importamos TODOS los controladores que necesitamos aquí
-const { createCourse, getCourses, getMyCourses} = require('../controllers/courseController');
+const { createCourse, getCourses, getMyCourses, getCourseById} = require('../controllers/courseController');
 const { publishModuleToCourse, getPublishedModulesInCourse } = require('../controllers/moduleController');
 const { protect, authorize } = require('../middleware/authMiddleware');
 
@@ -24,5 +24,7 @@ router.route('/:courseId/modules')
 // Aquí anidaremos las lecciones en el futuro, pero lo haremos de la misma forma.
 
 router.use('/:courseId/sections', sectionRoutes);
+
+router.route('/:id').get(protect, getCourseById);
 
 module.exports = router;

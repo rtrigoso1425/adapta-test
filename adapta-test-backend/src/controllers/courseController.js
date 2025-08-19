@@ -49,8 +49,23 @@ const getMyCourses = async (req, res) => {
 };
 
 
+// @desc    Obtener un curso por su ID
+// @route   GET /api/courses/:id
+// @access  Private
+const getCourseById = async (req, res) => {
+    const course = await Course.findById(req.params.id).populate('instructor', 'name');
+
+    if (course) {
+        res.json(course);
+    } else {
+        res.status(404);
+        throw new Error('Curso no encontrado');
+    }
+};
+
 module.exports = {
     createCourse,
     getCourses,
     getMyCourses,
+    getCourseById,
 };

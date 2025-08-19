@@ -3,7 +3,7 @@ import authReducer from '../features/auth/authSlice';
 import courseReducer from '../features/courses/courseSlice'; // <-- 1. IMPORTAR
 import enrollmentReducer from '../features/enrollments/enrollmentSlice';
 import sectionReducer from '../features/sections/sectionSlice';
-
+import contentReducer from '../features/content/contentSlice'; // <-- 2. IMPORTAR
 
 export const store = configureStore({
     reducer: {
@@ -11,5 +11,6 @@ export const store = configureStore({
         courses: courseReducer, // <-- 2. AÑADIR
         enrollments: enrollmentReducer,
         sections: sectionReducer,
+        content: contentReducer,
     },
 });

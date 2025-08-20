@@ -2,17 +2,17 @@ import { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useParams } from 'react-router-dom';
 
-// Redux Actions que SÍ tenemos
-import { getModulesForCourse, getCourseDetails, reset as resetContent } from '../features/content/contentSlice';
-import { reset as resetSections, getSectionsForCourse } from '../features/sections/sectionSlice'; // Solo para resetear
+// --- Redux Actions ---
+import { getSectionDetails, reset as resetLearning } from '../features/learning/learningSlice';
+import { getModulesForCourse, reset as resetContent } from '../features/content/contentSlice';
 
-// Componentes
-import AssignmentsTab from '../features/assignments/components/AssignmentsTab'; // Asegúrate de que este componente exista
-import ModuleItem from '../features/content/ModuleItem';
+import AssignmentsTab from '../features/assignments/components/AssignmentsTab'
 import AddModuleForm from '../features/content/AddModuleForm';
+import ModuleItem from '../features/content/ModuleItem';
 
 
-// --- Componente para la Pestaña de Módulos ---
+// --- Componentes de Pestañas (los definiremos aquí por claridad) ---
+
 const ModulesTab = ({ courseId }) => {
     const dispatch = useDispatch();
     const { modules, isLoading } = useSelector((state) => state.content);
@@ -42,35 +42,28 @@ const ModulesTab = ({ courseId }) => {
 };
 
 
-// --- COMPONENTE PRINCIPAL CORREGIDO (SIN LEARNING SLICE) ---
+
+// --- COMPONENTE PRINCIPAL CORREGIDO Y AUTOSUFICIENTE ---
 const SectionManagementPage = () => {
     const { id: sectionId } = useParams();
     const dispatch = useDispatch();
     const [activeTab, setActiveTab] = useState('modules');
 
-    // Leemos la lista de secciones que el Dashboard ya cargó
-    const { mySections, isLoading: isLoadingSections } = useSelector((state) => state.sections);
+    // Leemos la sección activa desde el nuevo 'learningSlice'
+    const { section, isLoading: isLoadingSection } = useSelector((state) => state.learning);
 
-    // Buscamos la sección actual en la lista
-    const section = mySections.find(s => s._id === sectionId);
-
-    // Limpiamos el estado de las secciones cuando salimos de la página
+    // Este useEffect ahora solo se encarga de cargar los datos de la sección
     useEffect(() => {
-        dispatch(getCourseDetails(sectionId));
-    dispatch(getModulesForCourse(sectionId));
-    dispatch(getSectionsForCourse(sectionId));
+        dispatch(getSectionDetails(sectionId));
+        
+        // La limpieza se ejecuta cuando sales de la página
         return () => {
-            dispatch(resetSections());
+            dispatch(resetLearning());
         };
-    }, [dispatch]);
+    }, [dispatch, sectionId]);
 
-    if (isLoadingSections) {
-        return <h1>Cargando...</h1>;
-    }
-    
-    // Si no se encuentra la sección (por ejemplo, al recargar la página directamente)
-    if (!section) {
-        return <h1>Sección no encontrada. Por favor, vuelve al Dashboard.</h1>;
+    if (isLoadingSection || !section) {
+        return <h1>Cargando datos de la sección...</h1>;
     }
 
     return (
@@ -85,7 +78,7 @@ const SectionManagementPage = () => {
             </nav>
 
             <div>
-                {/* Pasamos el courseId y sectionId necesarios a cada pestaña */}
+                {/* Pasamos los IDs necesarios a cada pestaña */}
                 {activeTab === 'modules' && <ModulesTab courseId={section.course._id} />}
                 {activeTab === 'assignments' && <AssignmentsTab sectionId={section._id} />}
             </div>

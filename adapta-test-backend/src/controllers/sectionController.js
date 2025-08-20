@@ -46,4 +46,20 @@ const getMySections = async (req, res) => {
     res.json(sections);
 };
 
-module.exports = { createSection, getSectionsForCourse, getMySections };
+// @desc    Obtener una sección por su ID
+// @route   GET /api/sections/:id
+// @access  Private
+const getSectionById = async (req, res) => {
+    const section = await Section.findById(req.params.id)
+        .populate('course', 'title')
+        .populate('instructor', 'name');
+
+    if (section) {
+        res.json(section);
+    } else {
+        res.status(404);
+        throw new Error('Sección no encontrada');
+    }
+};
+
+module.exports = { createSection, getSectionsForCourse, getMySections, getSectionById };

@@ -1,20 +1,20 @@
-import { Routes, Route } from 'react-router-dom';
-import Header from './components/Header'; // <-- IMPORTAR
-import HomePage from './pages/HomePage';
-import LoginPage from './pages/LoginPage';
-import RegisterPage from './pages/RegisterPage';
-import DashboardPage from './pages/DashboardPage';
-import CoursesPage from './pages/CoursesPage'; // <-- 3. IMPORTAR
-import CourseDetailPage from './pages/CourseDetailPage';
-import PrivateRoute from './components/PrivateRoute'; // <-- 1. IMPORTAR RUTA PRIVADA
-import CourseManagementPage from './pages/CourseManagementPage'; // <-- 2. IMPORTAR NUEVA PÁGINA
-
+import { Routes, Route } from "react-router-dom";
+import Header from "./components/Header"; // <-- IMPORTAR
+import HomePage from "./pages/HomePage";
+import LoginPage from "./pages/LoginPage";
+import RegisterPage from "./pages/RegisterPage";
+import DashboardPage from "./pages/DashboardPage";
+import CoursesPage from "./pages/CoursesPage"; // <-- 3. IMPORTAR
+import CourseDetailPage from "./pages/CourseDetailPage";
+import PrivateRoute from "./components/PrivateRoute"; // <-- 1. IMPORTAR RUTA PRIVADA
+//import CourseManagementPage from "./pages/CourseManagementPage"; // <-- 2. IMPORTAR NUEVA PÁGINA
+import SectionManagementPage from './pages/SectionManagementPage.jsx'; // <-- 1. IMPORTA LA PÁGINA RENOMBRADA
 
 function App() {
   return (
     <>
       <Header />
-      <main style={{ padding: '20px' }}>
+      <main style={{ padding: "20px" }}>
         <Routes>
           {/* Rutas Públicas */}
           <Route path="/" element={<HomePage />} />
@@ -22,11 +22,14 @@ function App() {
           <Route path="/register" element={<RegisterPage />} />
 
           {/* Rutas Privadas */}
-          <Route path='' element={<PrivateRoute />}>
+          <Route path="" element={<PrivateRoute />}>
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/courses" element={<CoursesPage />} />
             <Route path="/courses/:id" element={<CourseDetailPage />} />
-            <Route path="/manage/course/:id" element={<CourseManagementPage />} /> {/* <-- 3. AÑADIR RUTA PROTEGIDA */}
+            <Route
+              path="/manage/section/:id"
+              element={<SectionManagementPage />}
+            />
           </Route>
         </Routes>
       </main>

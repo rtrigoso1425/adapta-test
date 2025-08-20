@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { Link } from "react-router-dom";
-import { getMySections, reset } from "../sections/sectionSlice"; // <-- CAMBIO
+import { getMySections } from "../sections/sectionSlice"; // <-- CAMBIO
 
 const ProfessorDashboard = () => {
   const dispatch = useDispatch();
@@ -11,9 +11,6 @@ const ProfessorDashboard = () => {
   useEffect(() => {
     // CAMBIO: Despachamos la nueva acción
     dispatch(getMySections());
-    return () => {
-      dispatch(reset());
-    };
   }, [dispatch]);
 
   if (isLoading) return <h3>Cargando tus secciones asignadas...</h3>;
@@ -39,8 +36,8 @@ const ProfessorDashboard = () => {
               <h4>Sección: {section.sectionCode}</h4>
               <p>Ciclo: {section.academicCycle.name}</p>
               <p>Capacidad: {section.capacity} alumnos</p>
-              <Link to={`/manage/course/${section.course._id}`}>
-                Gestionar Contenido del Curso
+              <Link to={`/manage/section/${section._id}`}>
+                Gestionar Sección
               </Link>
             </div>
           ))

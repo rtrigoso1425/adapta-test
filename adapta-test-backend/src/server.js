@@ -10,6 +10,7 @@ const questionRoutes = require('./routes/questionRoutes');
 const enrollmentRoutes = require('./routes/enrollmentRoutes');
 const academicCycleRoutes = require('./routes/academicCycleRoutes');
 const sectionRoutes = require('./routes/sectionRoutes');
+const sectionContentRoutes = require('./routes/section.content.routes'); // <-- IMPORTAR
 
 dotenv.config();
 connectDB();
@@ -30,6 +31,7 @@ app.use('/api/questions', questionRoutes);
 app.use('/api/enrollments', enrollmentRoutes);
 app.use('/api/academic-cycles', academicCycleRoutes);
 app.use('/api/sections', sectionRoutes);
+app.use('/api/sections/:sectionId', sectionContentRoutes);
 
 
 const PORT = process.env.PORT || 5000;

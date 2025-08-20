@@ -1,15 +1,15 @@
 import { useState } from 'react';
 import { useDispatch } from 'react-redux';
-import { createAndPublishModule } from './contentSlice';
+import { createAndPublishModuleToSection } from './contentSlice';
 
-const AddModuleForm = ({ courseId }) => {
+const AddModuleForm = ({ sectionId }) => {
     const [title, setTitle] = useState('');
     const dispatch = useDispatch();
 
     const onSubmit = (e) => {
         e.preventDefault();
         const moduleData = { title };
-        dispatch(createAndPublishModule({ courseId, moduleData }));
+        dispatch(createAndPublishModuleToSection({ sectionId, moduleData }));
         setTitle(''); // Limpiar el formulario
     };
 

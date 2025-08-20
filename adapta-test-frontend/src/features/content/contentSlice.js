@@ -13,14 +13,16 @@ const initialState = {
 };
 
 // Thunks
-export const getModulesForCourse = createAsyncThunk(
+export const getModulesForSection = createAsyncThunk(
   "content/getModules",
-  async (courseId, thunkAPI) => {
+  async (sectionId, thunkAPI) => {
     try {
       const token = thunkAPI.getState().auth.user.token;
-      return await contentService.getModulesForCourse(courseId, token);
+      return await contentService.getModulesForSection(sectionId, token);
     } catch (error) {
-      /* ... manejo de error ... */
+      const message =
+        error.response?.data?.message || error.message || error.toString();
+      return thunkAPI.rejectWithValue(message);
     }
   }
 );
@@ -33,14 +35,16 @@ export const getCourseDetails = createAsyncThunk(
       const token = thunkAPI.getState().auth.user.token;
       return await contentService.getCourseDetails(courseId, token);
     } catch (error) {
-      /* ... manejo de error ... */
+      const message =
+        error.response?.data?.message || error.message || error.toString();
+      return thunkAPI.rejectWithValue(message);
     }
   }
 );
 
-export const createAndPublishModule = createAsyncThunk(
+export const createAndPublishModuleToSection = createAsyncThunk(
   "content/createAndPublish",
-  async ({ courseId, moduleData }, thunkAPI) => {
+  async ({ sectionId, moduleData }, thunkAPI) => {
     try {
       const token = thunkAPI.getState().auth.user.token;
       // Paso 1: Crear el módulo en la biblioteca
@@ -48,9 +52,9 @@ export const createAndPublishModule = createAsyncThunk(
         moduleData,
         token
       );
-      // Paso 2: Publicar el nuevo módulo en el curso
-      await contentService.publishModuleToCourse(
-        courseId,
+      // Paso 2: Publicar el nuevo módulo en la sección
+      await contentService.publishModuleToSection(
+        sectionId,
         newModule._id,
         token
       );
@@ -58,26 +62,45 @@ export const createAndPublishModule = createAsyncThunk(
       return newModule;
       // eslint-disable-next-line no-unused-vars
     } catch (error) {
-      /* ... manejo de error ... */
+      const message =
+        error.response?.data?.message || error.message || error.toString();
+      return thunkAPI.rejectWithValue(message);
     }
   }
 );
 
-export const getLessonsForModule = createAsyncThunk('content/getLessons', async (moduleId, thunkAPI) => {
+export const getLessonsForModule = createAsyncThunk(
+  "content/getLessons",
+  async (moduleId, thunkAPI) => {
     try {
-        const token = thunkAPI.getState().auth.user.token;
-        const lessons = await contentService.getLessonsForModule(moduleId, token);
-        return { moduleId, lessons };
-    } catch (error) { /* ... */ }
-});
+      const token = thunkAPI.getState().auth.user.token;
+      const lessons = await contentService.getLessonsForModule(moduleId, token);
+      return { moduleId, lessons };
+    } catch (error) {
+      const message =
+        error.response?.data?.message || error.message || error.toString();
+      return thunkAPI.rejectWithValue(message);
+    }
+  }
+);
 
-export const createLessonInModule = createAsyncThunk('content/createLesson', async ({ moduleId, lessonData }, thunkAPI) => {
+export const createLessonInModule = createAsyncThunk(
+  "content/createLesson",
+  async ({ moduleId, lessonData }, thunkAPI) => {
     try {
-        const token = thunkAPI.getState().auth.user.token;
-        return await contentService.createLessonInModule(moduleId, lessonData, token);
-    } catch (error) { /* ... */ }
-});
-
+      const token = thunkAPI.getState().auth.user.token;
+      return await contentService.createLessonInModule(
+        moduleId,
+        lessonData,
+        token
+      );
+    } catch (error) {
+      const message =
+        error.response?.data?.message || error.message || error.toString();
+      return thunkAPI.rejectWithValue(message);
+    }
+  }
+);
 
 export const contentSlice = createSlice({
   name: "content",
@@ -86,30 +109,30 @@ export const contentSlice = createSlice({
   reducers: {
     reset: (state) => initialState,
     resetLessons: (state, action) => {
-        delete state.lessonsByModule[action.payload]; // Elimina las lecciones de un módulo específico
+      delete state.lessonsByModule[action.payload]; // Elimina las lecciones de un módulo específico
     },
-},
-  
+  },
+
   extraReducers: (builder) => {
     builder
-      .addCase(getModulesForCourse.pending, (state) => {
+      .addCase(getModulesForSection.pending, (state) => {
         state.isLoading = true;
       })
-      .addCase(getModulesForCourse.fulfilled, (state, action) => {
+      .addCase(getModulesForSection.fulfilled, (state, action) => {
         state.isLoading = false;
         state.modules = action.payload;
       })
-      .addCase(getModulesForCourse.rejected, (state, action) => {
+      .addCase(getModulesForSection.rejected, (state, action) => {
         /* ... */
       })
-      .addCase(createAndPublishModule.pending, (state) => {
+      .addCase(createAndPublishModuleToSection.pending, (state) => {
         state.isLoading = true;
       })
-      .addCase(createAndPublishModule.fulfilled, (state, action) => {
+      .addCase(createAndPublishModuleToSection.fulfilled, (state, action) => {
         state.isLoading = false;
         state.modules.push(action.payload); // Añadimos el nuevo módulo a la lista
       })
-      .addCase(createAndPublishModule.rejected, (state, action) => {
+      .addCase(createAndPublishModuleToSection.rejected, (state, action) => {
         /* ... */
       })
       .addCase(getCourseDetails.pending, (state) => {
@@ -122,24 +145,26 @@ export const contentSlice = createSlice({
       .addCase(getCourseDetails.rejected, (state, action) => {
         /* ... */
       })
-      .addCase(getLessonsForModule.pending, (state) => { state.isLoadingLessons = true; })
-        .addCase(getLessonsForModule.fulfilled, (state, action) => {
-            state.isLoadingLessons = false;
-            state.lessonsByModule[action.payload.moduleId] = action.payload.lessons;
-        })
-        .addCase(getLessonsForModule.rejected, (state, action) => { /* ... */ })
-        .addCase(createLessonInModule.fulfilled, (state, action) => {
-            const moduleId = action.payload.module;
-            if (state.lessonsByModule[moduleId]) {
-                state.lessonsByModule[moduleId].push(action.payload);
-            } else {
-                state.lessonsByModule[moduleId] = [action.payload];
-            }
-        });
+      .addCase(getLessonsForModule.pending, (state) => {
+        state.isLoadingLessons = true;
+      })
+      .addCase(getLessonsForModule.fulfilled, (state, action) => {
+        state.isLoadingLessons = false;
+        state.lessonsByModule[action.payload.moduleId] = action.payload.lessons;
+      })
+      .addCase(getLessonsForModule.rejected, (state, action) => {
+        /* ... */
+      })
+      .addCase(createLessonInModule.fulfilled, (state, action) => {
+        const moduleId = action.payload.module;
+        if (state.lessonsByModule[moduleId]) {
+          state.lessonsByModule[moduleId].push(action.payload);
+        } else {
+          state.lessonsByModule[moduleId] = [action.payload];
+        }
+      });
   },
 });
 
-
-
-export const { reset, resetLessons} = contentSlice.actions;
+export const { reset, resetLessons } = contentSlice.actions;
 export default contentSlice.reducer;

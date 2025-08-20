@@ -4,7 +4,6 @@ const sectionRoutes = require('./sectionRoutes');
 
 // Importamos TODOS los controladores que necesitamos aquí
 const { createCourse, getCourses, getCourseById} = require('../controllers/courseController');
-const { publishModuleToCourse, getPublishedModulesInCourse } = require('../controllers/moduleController');
 const { protect, authorize } = require('../middleware/authMiddleware');
 
 // --- Rutas para los Cursos en sí ---
@@ -15,9 +14,6 @@ router.route('/')
 
 // --- Rutas ANIDADAS para los Módulos DENTRO de un Curso ---
 // Corresponde a /api/courses/:courseId/modules
-router.route('/:courseId/modules')
-    .post(protect, authorize('professor'), publishModuleToCourse) // <-- Ahora apunta al controlador CORRECTO
-    .get(protect, getPublishedModulesInCourse); // <-- Ahora apunta al controlador CORRECTO
 
 // Aquí anidaremos las lecciones en el futuro, pero lo haremos de la misma forma.
 

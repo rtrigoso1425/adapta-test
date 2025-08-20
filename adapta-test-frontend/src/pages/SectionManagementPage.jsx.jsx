@@ -4,7 +4,7 @@ import { useParams } from 'react-router-dom';
 
 // --- Redux Actions ---
 import { getSectionDetails, reset as resetLearning } from '../features/learning/learningSlice';
-import { getModulesForCourse, reset as resetContent } from '../features/content/contentSlice';
+import { getModulesForSection, reset as resetContent } from '../features/content/contentSlice';
 
 import AssignmentsTab from '../features/assignments/components/AssignmentsTab'
 import AddModuleForm from '../features/content/AddModuleForm';
@@ -13,16 +13,16 @@ import ModuleItem from '../features/content/ModuleItem';
 
 // --- Componentes de Pestañas (los definiremos aquí por claridad) ---
 
-const ModulesTab = ({ courseId }) => {
+const ModulesTab = ({ sectionId }) => {
     const dispatch = useDispatch();
     const { modules, isLoading } = useSelector((state) => state.content);
 
     useEffect(() => {
-        if (courseId) {
-            dispatch(getModulesForCourse(courseId));
+        if (sectionId) {
+            dispatch(getModulesForSection(sectionId));
         }
         return () => { dispatch(resetContent()); };
-    }, [dispatch, courseId]);
+    }, [dispatch, sectionId]);
 
     if (isLoading) {
         return <p>Cargando módulos...</p>;
@@ -36,7 +36,7 @@ const ModulesTab = ({ courseId }) => {
                     modules.map((module) => <ModuleItem key={module._id} module={module} />)
                 ) : ( <p>Este curso aún no tiene módulos.</p> )}
             </section>
-            <AddModuleForm courseId={courseId} />
+            <AddModuleForm sectionId={sectionId} />
         </div>
     );
 };
@@ -79,7 +79,7 @@ const SectionManagementPage = () => {
 
             <div>
                 {/* Pasamos los IDs necesarios a cada pestaña */}
-                {activeTab === 'modules' && <ModulesTab courseId={section.course._id} />}
+                {activeTab === 'modules' && <ModulesTab sectionId={section._id} />}
                 {activeTab === 'assignments' && <AssignmentsTab sectionId={section._id} />}
             </div>
         </div>

@@ -1,6 +1,7 @@
 // src/controllers/moduleController.js
 const Module = require('../models/moduleModel');
 const Course = require('../models/courseModel');
+const Section = require('../models/sectionModel');
 
 // @desc    Crear un nuevo módulo en la biblioteca personal del profesor
 // @route   POST /api/modules
@@ -31,30 +32,29 @@ const getMyLibraryModules = async (req, res) => {
 // @desc    "Publicar" un módulo de la biblioteca en un curso específico
 // @route   POST /api/courses/:courseId/modules
 // @access  Private/Professor
-const publishModuleToCourse = async (req, res) => {
+// @desc    "Publicar" un módulo en una sección específica
+// @route   POST /api/sections/:sectionId/modules
+// @access  Private/Professor
+const publishModuleToSection = async (req, res) => {
     const { moduleId } = req.body;
-    const { courseId } = req.params;
+    const { sectionId } = req.params;
 
-    // 1. Validar que el curso y el módulo existen
-    const course = await Course.findById(courseId);
+    // 1. Validar que la sección y el módulo existen
+    const section = await Section.findById(sectionId);
     const module = await Module.findById(moduleId);
-    if (!course || !module) {
+    if (!section || !module) {
         res.status(404);
-        throw new Error('Curso o Módulo no encontrado.');
+        throw new Error('Sección o Módulo no encontrado.');
     }
 
-    // 2. Validar que el usuario es el instructor asignado al curso Y el dueño del módulo
-    if (course.instructor.toString() !== req.user._id.toString() || module.owner.toString() !== req.user._id.toString()) {
+    // 2. Validar que el usuario es el instructor de la sección Y el dueño del módulo
+    if (section.instructor.toString() !== req.user._id.toString() || module.owner.toString() !== req.user._id.toString()) {
         res.status(403);
         throw new Error('Usuario no autorizado para esta acción.');
     }
 
-    // 3. (Lógica de ciclo simplificada por ahora)
-    // En una implementación completa, aquí obtendríamos el ciclo activo.
-    // Por ahora, simularemos que no hay ciclo específico.
-
-    // 4. Añadir la referencia de publicación al módulo
-    module.publishedIn.push({ course: courseId });
+    // 4. Añadir la referencia de publicación a la sección
+    module.publishedIn.push({ section: sectionId });
     await module.save();
 
     res.status(200).json(module);
@@ -63,15 +63,19 @@ const publishModuleToCourse = async (req, res) => {
 // @desc    Obtener los módulos publicados en un curso específico
 // @route   GET /api/courses/:courseId/modules
 // @access  Private
-const getPublishedModulesInCourse = async (req, res) => {
-    const { courseId } = req.params;
-    const modules = await Module.find({ 'publishedIn.course': courseId }).sort('order');
+// @desc    Obtener los módulos publicados en una sección específica
+// @route   GET /api/sections/:sectionId/modules
+// @access  Private
+const getPublishedModulesForSection = async (req, res) => {
+    const { sectionId } = req.params;
+    const modules = await Module.find({ 'publishedIn.section': sectionId }).sort('order');
     res.json(modules);
 };
 
 module.exports = {
     createModuleInLibrary,
     getMyLibraryModules,
-    publishModuleToCourse,
-    getPublishedModulesInCourse,
+    publishModuleToSection,
+    getPublishedModulesForSection,
+    // Añadimos aquí las funciones que faltan
 };

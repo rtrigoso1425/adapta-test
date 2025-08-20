@@ -1,13 +1,14 @@
 import axios from 'axios';
 
 const API_URL_COURSES = '/api/courses/';
+const API_URL_SECTIONS = '/api/sections/';
 const API_URL_MODULES = '/api/modules/';
 const API_URL_LESSONS = '/api/modules/';
 
-// Obtener los módulos publicados en un curso
-const getModulesForCourse = async (courseId, token) => {
+// Obtener los módulos publicados en una SECCIÓN
+const getModulesForSection = async (sectionId, token) => {
     const config = { headers: { Authorization: `Bearer ${token}` } };
-    const response = await axios.get(API_URL_COURSES + courseId + '/modules', config);
+    const response = await axios.get(`${API_URL_SECTIONS}${sectionId}/modules`, config);
     return response.data;
 };
 
@@ -18,10 +19,10 @@ const createModuleInLibrary = async (moduleData, token) => {
     return response.data;
 };
 
-// Publicar un módulo en un curso
-const publishModuleToCourse = async (courseId, moduleId, token) => {
+// Publicar un módulo en una SECCIÓN
+const publishModuleToSection = async (sectionId, moduleId, token) => {
     const config = { headers: { Authorization: `Bearer ${token}` } };
-    const response = await axios.post(API_URL_COURSES + courseId + '/modules', { moduleId }, config);
+    const response = await axios.post(`${API_URL_SECTIONS}${sectionId}/modules`, { moduleId }, config);
     return response.data;
 };
 
@@ -47,9 +48,9 @@ const createLessonInModule = async (moduleId, lessonData, token) => {
 
 
 const contentService = {
-    getModulesForCourse,
+    getModulesForSection,
     createModuleInLibrary,
-    publishModuleToCourse,
+    publishModuleToSection,
     getCourseDetails,
     getLessonsForModule,
     createLessonInModule

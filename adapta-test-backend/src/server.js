@@ -31,6 +31,7 @@ app.use('/api/enrollments', enrollmentRoutes);
 app.use('/api/academic-cycles', academicCycleRoutes);
 app.use('/api/sections', sectionRoutes);
 
+
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
     console.log(`Servidor corriendo en el puerto ${PORT}`);

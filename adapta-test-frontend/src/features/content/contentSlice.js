@@ -5,7 +5,9 @@ import contentService from "./contentService";
 const initialState = {
   course: null,
   modules: [],
+  lessonsByModule: {},
   isLoading: false,
+  isLoadingLessons: false,
   isError: false,
   message: "",
 };
@@ -61,11 +63,33 @@ export const createAndPublishModule = createAsyncThunk(
   }
 );
 
+export const getLessonsForModule = createAsyncThunk('content/getLessons', async (moduleId, thunkAPI) => {
+    try {
+        const token = thunkAPI.getState().auth.user.token;
+        const lessons = await contentService.getLessonsForModule(moduleId, token);
+        return { moduleId, lessons };
+    } catch (error) { /* ... */ }
+});
+
+export const createLessonInModule = createAsyncThunk('content/createLesson', async ({ moduleId, lessonData }, thunkAPI) => {
+    try {
+        const token = thunkAPI.getState().auth.user.token;
+        return await contentService.createLessonInModule(moduleId, lessonData, token);
+    } catch (error) { /* ... */ }
+});
+
+
 export const contentSlice = createSlice({
   name: "content",
   initialState,
   // eslint-disable-next-line no-unused-vars
-  reducers: { reset: (state) => initialState },
+  reducers: {
+    reset: (state) => initialState,
+    resetLessons: (state, action) => {
+        delete state.lessonsByModule[action.payload]; // Elimina las lecciones de un módulo específico
+    },
+},
+  
   extraReducers: (builder) => {
     builder
       .addCase(getModulesForCourse.pending, (state) => {
@@ -97,9 +121,25 @@ export const contentSlice = createSlice({
       })
       .addCase(getCourseDetails.rejected, (state, action) => {
         /* ... */
-      });
+      })
+      .addCase(getLessonsForModule.pending, (state) => { state.isLoadingLessons = true; })
+        .addCase(getLessonsForModule.fulfilled, (state, action) => {
+            state.isLoadingLessons = false;
+            state.lessonsByModule[action.payload.moduleId] = action.payload.lessons;
+        })
+        .addCase(getLessonsForModule.rejected, (state, action) => { /* ... */ })
+        .addCase(createLessonInModule.fulfilled, (state, action) => {
+            const moduleId = action.payload.module;
+            if (state.lessonsByModule[moduleId]) {
+                state.lessonsByModule[moduleId].push(action.payload);
+            } else {
+                state.lessonsByModule[moduleId] = [action.payload];
+            }
+        });
   },
 });
 
-export const { reset } = contentSlice.actions;
+
+
+export const { reset, resetLessons} = contentSlice.actions;
 export default contentSlice.reducer;

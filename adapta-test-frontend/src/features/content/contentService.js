@@ -2,6 +2,7 @@ import axios from 'axios';
 
 const API_URL_COURSES = '/api/courses/';
 const API_URL_MODULES = '/api/modules/';
+const API_URL_LESSONS = '/api/modules/';
 
 // Obtener los módulos publicados en un curso
 const getModulesForCourse = async (courseId, token) => {
@@ -32,11 +33,26 @@ const getCourseDetails = async (courseId, token) => {
     return response.data;
 };
 
+const getLessonsForModule = async (moduleId, token) => {
+    const config = { headers: { Authorization: `Bearer ${token}` } };
+    const response = await axios.get(`${API_URL_LESSONS}${moduleId}/lessons`, config);
+    return response.data;
+};
+
+const createLessonInModule = async (moduleId, lessonData, token) => {
+    const config = { headers: { Authorization: `Bearer ${token}` } };
+    const response = await axios.post(`${API_URL_LESSONS}${moduleId}/lessons`, lessonData, config);
+    return response.data;
+};
+
+
 const contentService = {
     getModulesForCourse,
     createModuleInLibrary,
     publishModuleToCourse,
     getCourseDetails,
+    getLessonsForModule,
+    createLessonInModule
 };
 
 export default contentService;

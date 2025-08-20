@@ -40,14 +40,6 @@ const getCourses = async (req, res) => {
     res.json(courses);
 };
 
-// @desc    Obtener los cursos asignados a un instructor
-// @route   GET /api/courses/mycourses
-// @access  Private/Professor
-const getMyCourses = async (req, res) => {
-    const courses = await Course.find({ instructor: req.user._id });
-    res.json(courses);
-};
-
 
 // @desc    Obtener un curso por su ID
 // @route   GET /api/courses/:id
@@ -66,6 +58,5 @@ const getCourseById = async (req, res) => {
 module.exports = {
     createCourse,
     getCourses,
-    getMyCourses,
     getCourseById,
 };

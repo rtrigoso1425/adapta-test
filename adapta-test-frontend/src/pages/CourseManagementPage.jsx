@@ -1,52 +1,82 @@
-import { useEffect } from 'react';
-import { useSelector, useDispatch } from 'react-redux';
-import { useParams } from 'react-router-dom';
-// CAMBIO 1: Importamos la nueva acción
-import { getModulesForCourse, getCourseDetails, reset } from '../features/content/contentSlice';
-import AddModuleForm from '../features/content/AddModuleForm';
+import { useEffect, useState } from "react";
+import { useSelector, useDispatch } from "react-redux";
+import { useParams } from "react-router-dom";
+import {
+  getModulesForCourse,
+  getCourseDetails,
+  reset,
+} from "../features/content/contentSlice";
+import AddModuleForm from "../features/content/AddModuleForm";
+import ModuleItem from "../features/content/ModuleItem";
+import AssignmentsTab from "../features/assignments/components/AssignmentsTab";
 
-const CourseManagementPage = () => {
-    const { id: courseId } = useParams();
+// Componente para la Pestaña de Módulos
+const ModulesTab = ({ courseId }) => {
     const dispatch = useDispatch();
-    // CAMBIO 2: Obtenemos también el 'course' del estado
-    const { course, modules, isLoading } = useSelector((state) => state.content);
+    const { modules, isLoading } = useSelector((state) => state.content);
 
     useEffect(() => {
-        // CAMBIO 3: Despachamos ambas acciones al cargar
-        dispatch(getCourseDetails(courseId));
         dispatch(getModulesForCourse(courseId));
-
         return () => { dispatch(reset()); };
     }, [dispatch, courseId]);
 
-    // Mejoramos la condición de carga
-    if (isLoading || !course) {
-        return <h1>Cargando datos del curso...</h1>;
+    if (isLoading && modules.length === 0) {
+        return <h1>Cargando contenido del curso...</h1>;
     }
 
     return (
         <div>
-            {/* CAMBIO 4: Mostramos el título y la descripción del curso */}
-            <h1>Gestionando: {course.title}</h1>
-            <p>{course.description}</p>
-            <hr />
-
             <section>
                 <h2>Módulos del Curso</h2>
                 {modules.length > 0 ? (
-                    modules.map((module) => (
-                        <div key={module._id} style={{ border: '1px solid #ddd', padding: '15px', margin: '10px 0' }}>
-                            <h3>{module.title}</h3>
-                        </div>
-                    ))
-                ) : (
-                    <p>Este curso aún no tiene módulos. ¡Añade el primero!</p>
-                )}
+                    modules.map((module) => <ModuleItem key={module._id} module={module} />)
+                ) : ( <p>Este curso aún no tiene módulos.</p> )}
             </section>
-
             <AddModuleForm courseId={courseId} />
         </div>
     );
+};
+
+
+
+const CourseManagementPage = () => {
+  const [activeTab, setActiveTab] = useState('modules');
+  const { id: courseId } = useParams();
+  const dispatch = useDispatch();
+  const { course, isLoading } = useSelector((state) => state.content);
+
+  useEffect(() => {
+    dispatch(getCourseDetails(courseId));
+    //dispatch(getModulesForCourse(courseId));
+
+    return () => {
+      dispatch(reset());
+    };
+  }, [dispatch, courseId]);
+
+  if (isLoading || !course) {
+    return <h1>Cargando datos del curso...</h1>;
+  }
+
+  return (
+    <div>
+      <h1>Gestionando: {course.title}</h1>
+      <p>{course.description}</p>
+      <hr />
+
+      {/* Navegación de pestañas */}
+      <nav>
+        <button onClick={() => setActiveTab('modules')}>Módulos</button>
+        <button onClick={() => setActiveTab('assignments')}>Tareas</button>
+      </nav>
+
+      {/* Contenido de la pestaña activa */}
+      <div style={{ marginTop: '20px' }}>
+        {activeTab === 'modules' && <ModulesTab courseId={courseId} />}
+        {activeTab === 'assignments' && <AssignmentsTab courseId={courseId} />}
+      </div>
+    </div>
+  );
 };
 
 export default CourseManagementPage;

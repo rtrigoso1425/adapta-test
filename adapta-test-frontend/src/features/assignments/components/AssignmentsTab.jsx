@@ -1,3 +1,4 @@
+// eslint-disable-next-line no-unused-vars
 import { useEffect, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 // YA NO necesitamos getSectionsForCourse aquí

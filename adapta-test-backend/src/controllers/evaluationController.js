@@ -99,8 +99,14 @@ export const submitAnswer = async (req, res) => {
 
     if (!nextQuestion) {
         session.status = 'completed';
-        await session.save();
-        return res.json({ status: 'completed', message: '¡Has respondido todas las preguntas!' });
+    await session.save();
+    // AHORA ENVIAMOS LA MISMA ESTRUCTURA COMPLETA
+    return res.json({ 
+        status: 'completed', 
+        message: '¡Has respondido todas las preguntas!',
+        finalScore: session.score,
+        finalMastery: session.currentMastery
+    });
     }
 
     res.json({

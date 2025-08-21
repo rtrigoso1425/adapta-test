@@ -12,6 +12,7 @@ const academicCycleRoutes = require('./routes/academicCycleRoutes');
 const sectionRoutes = require('./routes/sectionRoutes');
 const sectionContentRoutes = require('./routes/section.content.routes'); // <-- IMPORTAR
 const evaluationRoutes = require('./routes/evaluationRoutes');
+const careerRoutes = require('./routes/careerRoutes');
 
 dotenv.config();
 connectDB();
@@ -34,6 +35,27 @@ app.use('/api/academic-cycles', academicCycleRoutes);
 app.use('/api/sections', sectionRoutes);
 app.use('/api/sections/:sectionId', sectionContentRoutes);
 app.use('/api/evaluations', evaluationRoutes);
+app.use('/api/careers', careerRoutes); // Maneja las carreras
+
+// Middleware para capturar rutas no encontradas (error 404)
+app.use((req, res, next) => {
+    const error = new Error(`Ruta no encontrada - ${req.originalUrl}`);
+    res.status(404);
+    next(error); // Pasa el error al siguiente middleware
+});
+
+// Middleware para capturar todos los demás errores (error 500 o el que corresponda)
+app.use((err, req, res, next) => {
+    // A veces un error puede llegar aquí con un status 200, lo corregimos a 500
+    const statusCode = res.statusCode === 200 ? 500 : res.statusCode;
+    res.status(statusCode);
+    res.json({
+        message: err.message,
+        // Es una buena práctica de seguridad no mostrar el 'stack trace' en producción
+        stack: process.env.NODE_ENV === 'production' ? '🥞' : err.stack,
+    });
+});
+
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {

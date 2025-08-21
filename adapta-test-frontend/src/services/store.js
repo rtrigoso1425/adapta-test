@@ -7,6 +7,7 @@ import contentReducer from '../features/content/contentSlice'; // <-- 2. IMPORTA
 import assignmentReducer from '../features/assignments/assignmentSlice';
 import learningReducer from '../features/learning/learningSlice'; // <-- 3. IMPORTAR
 import questionReducer from '../features/questions/questionSlice'; // <-- 4. IMPORTAR
+import evaluationReducer from '../features/evaluation/evaluationSlice';
 
 export const store = configureStore({
     reducer: {
@@ -18,5 +19,6 @@ export const store = configureStore({
         assignments: assignmentReducer, // <-- 3. AÑADIR
         learning: learningReducer,
         questions: questionReducer, // <-- 4. AÑADIR
+        evaluation: evaluationReducer, // <-- AÑADIR
     },
 });

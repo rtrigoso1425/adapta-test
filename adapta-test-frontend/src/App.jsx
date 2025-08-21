@@ -10,6 +10,7 @@ import PrivateRoute from "./components/PrivateRoute"; // <-- 1. IMPORTAR RUTA PR
 //import CourseManagementPage from "./pages/CourseManagementPage"; // <-- 2. IMPORTAR NUEVA PÁGINA
 import SectionManagementPage from './pages/SectionManagementPage.jsx'; // <-- 1. IMPORTA LA PÁGINA RENOMBRADA
 import LearningPage from './pages/LearningPage'; // <-- IMPORTAR
+import EvaluationPage from "./pages/EvaluationPage.jsx";
 
 function App() {
   return (
@@ -31,8 +32,10 @@ function App() {
               path="/manage/section/:id"
               element={<SectionManagementPage />}
             />
+            <Route path="/learn/section/:id" element={<LearningPage />} /> {/* <-- AÑADIR RUTA */}
+            <Route path="/modules/:moduleId/evaluation" element={<EvaluationPage />} /> {/* <-- AÑADIR RUTA */}
           </Route>
-          <Route path="/learn/section/:id" element={<LearningPage />} /> {/* <-- AÑADIR RUTA */}
+          
         </Routes>
       </main>
     </>

@@ -12,11 +12,6 @@ const courseSchema = new mongoose.Schema(
             required: [true, 'La descripción del curso es obligatoria.'],
         },
         // Relaciona este curso con el usuario que lo creó (el profesor)
-        instructor: {
-            type: mongoose.Schema.Types.ObjectId,
-            required: true,
-            ref: 'User', // 'ref' le dice a Mongoose que este ID corresponde a un documento en la colección 'User'
-        },
         // Relaciona el curso con un coordinador (opcional al inicio)
         coordinator: {
             type: mongoose.Schema.Types.ObjectId,

@@ -74,4 +74,33 @@ const getSectionById = async (req, res) => {
     }
 };
 
-module.exports = { createSection, getSectionsForCourse, getMySections, getSectionById };
+// @desc    Actualizar los criterios de aprobación de una sección
+// @route   PUT /api/sections/:id/criteria
+// @access  Private/Professor or Private/Coordinator
+const updateApprovalCriteria = async (req, res) => {
+    const section = await Section.findById(req.params.id);
+
+    if (!section) {
+        res.status(404);
+        throw new Error('Sección no encontrada.');
+    }
+
+    // Validación de permisos: Solo el instructor de la sección puede cambiar los criterios.
+    // (Asumimos que el coordinador también podría, pero por ahora nos centramos en el instructor)
+    if (section.instructor.toString() !== req.user._id.toString()) {
+        res.status(403);
+        throw new Error('No autorizado para modificar esta sección.');
+    }
+
+    // Actualizamos el objeto 'approvalCriteria' con los datos que lleguen en el body
+    section.approvalCriteria = {
+        ...section.approvalCriteria,
+        ...req.body
+    };
+    
+    const updatedSection = await section.save();
+    res.json(updatedSection);
+};
+
+
+module.exports = { createSection, getSectionsForCourse, getMySections, getSectionById, updateApprovalCriteria };

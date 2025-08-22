@@ -1,43 +1,45 @@
 import { useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
-import { Link } from "react-router-dom";
-import { getMyEnrollments, reset } from "../enrollments/enrollmentSlice";
+import { getMyProgress, reset } from "../progress/progressSlice";
+import CareerEnrollmentPage from "../../pages/CareerEnrollmentPage";
+import StudentMatriculaPage from "../../pages/StudentMatriculaPage";
+import StudentCoursesPage from "../../pages/StudentCoursesPage.jsx"; // <-- 1. IMPORTAR
 
 const StudentDashboard = () => {
   const dispatch = useDispatch();
-  const { user } = useSelector((state) => state.auth);
-  const { enrollments, isLoading } = useSelector((state) => state.enrollments);
+  const { progressData, isLoading } = useSelector((state) => state.progress);
 
   useEffect(() => {
-    dispatch(getMyEnrollments());
+    dispatch(getMyProgress());
     return () => {
       dispatch(reset());
     };
   }, [dispatch]);
 
-  if (isLoading) return <h3>Cargando tus cursos...</h3>;
+  if (isLoading) {
+    return <h2>Cargando tu progreso académico...</h2>;
+  }
 
-  return (
-    <div>
-      <h1>Bienvenido, {user.name}</h1>
-      <h2>Mis Cursos Matriculados</h2>
-      {enrollments.length > 0 ? (
-    enrollments.map((enrollment) => (
-        <div key={enrollment._id} style={{ border: '1px solid #ddd', padding: '15px', margin: '10px 0' }}>
-            {/* CAMBIO: Accedemos a los datos a través de 'section' */}
-            <h3>{enrollment.section.course.title}</h3>
-            <h4>Sección: {enrollment.section.sectionCode}</h4>
-            <p>Instructor: {enrollment.section.instructor.name}</p>
-            <small>Ciclo: {enrollment.section.academicCycle.name}</small> <br />
-            {/* Este enlace nos llevará a la vista de aprendizaje de esa sección específica */}
-            <Link to={`/learn/section/${enrollment.section._id}`}>Ir al Curso</Link>
-        </div>
-    ))
-) : (
-    <p>No estás matriculado en ninguna sección para el ciclo actual.</p>
-)}
-    </div>
-  );
+  if (!progressData) {
+    return <h2>No se pudo cargar tu información. Intenta de nuevo.</h2>;
+  }
+
+  // ===============================================================
+  // 👇 LA LÓGICA DE TRES ESTADOS
+  // ===============================================================
+  if (progressData.needsCareerEnrollment) {
+    // ESTADO 1: No tiene carrera
+    return <CareerEnrollmentPage />;
+  } else if (
+    progressData.currentEnrollments &&
+    progressData.currentEnrollments.length > 0
+  ) {
+    // ESTADO 2: Tiene carrera Y está matriculado en el ciclo actual
+    return <StudentCoursesPage />; // <-- Esto ahora muestra la vista con historial y filtro
+  } else {
+    // ESTADO 3: Tiene carrera, pero necesita matricularse
+    return <StudentMatriculaPage />;
+  }
 };
 
 export default StudentDashboard;

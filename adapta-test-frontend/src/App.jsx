@@ -11,6 +11,7 @@ import PrivateRoute from "./components/PrivateRoute"; // <-- 1. IMPORTAR RUTA PR
 import SectionManagementPage from './pages/SectionManagementPage.jsx'; // <-- 1. IMPORTA LA PÁGINA RENOMBRADA
 import LearningPage from './pages/LearningPage'; // <-- IMPORTAR
 import EvaluationPage from "./pages/EvaluationPage.jsx";
+import CurriculumViewPage from "./pages/CurriculumViewPage.jsx";
 
 function App() {
   return (
@@ -34,6 +35,7 @@ function App() {
             />
             <Route path="/learn/section/:id" element={<LearningPage />} /> {/* <-- AÑADIR RUTA */}
             <Route path="/modules/:moduleId/evaluation" element={<EvaluationPage />} /> {/* <-- AÑADIR RUTA */}
+            <Route path="/career/:id/curriculum" element={<CurriculumViewPage />} /> {/* <-- AÑADIR RUTA */}
           </Route>
           
         </Routes>

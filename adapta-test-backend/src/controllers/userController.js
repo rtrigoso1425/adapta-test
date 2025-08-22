@@ -79,8 +79,20 @@ const getUserProfile = async (req, res) => {
     res.json(req.user);
 };
 
+// @desc    Obtener todos los usuarios (o filtrar por rol)
+// @route   GET /api/users
+// @access  Private/Admin
+const getUsers = async (req, res) => {
+    const { role } = req.query; // Permite filtrar por rol, ej. /api/users?role=coordinator
+    const filter = role ? { role } : {};
+    
+    const users = await User.find(filter).select('-password');
+    res.json(users);
+};
+
 module.exports = {
     registerUser,
     loginUser,
     getUserProfile,
+    getUsers,
 };

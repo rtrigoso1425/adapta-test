@@ -8,6 +8,10 @@ import assignmentReducer from '../features/assignments/assignmentSlice';
 import learningReducer from '../features/learning/learningSlice'; // <-- 3. IMPORTAR
 import questionReducer from '../features/questions/questionSlice'; // <-- 4. IMPORTAR
 import evaluationReducer from '../features/evaluation/evaluationSlice';
+import careerReducer from '../features/careers/careerSlice';
+import usersReducer from '../features/users/usersSlice';
+import academicCycleReducer from '../features/academic-cycles/academicCycleSlice';
+import progressReducer from '../features/progress/progressSlice';
 
 export const store = configureStore({
     reducer: {
@@ -20,5 +24,9 @@ export const store = configureStore({
         learning: learningReducer,
         questions: questionReducer, // <-- 4. AÑADIR
         evaluation: evaluationReducer, // <-- AÑADIR
+        careers: careerReducer, // <-- AÑADIR
+        users: usersReducer, // <-- AÑADIR
+        academicCycles: academicCycleReducer, // <-- AÑADIR
+        progress: progressReducer,
     },
 });

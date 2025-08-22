@@ -1,5 +1,6 @@
 const Section = require('../models/sectionModel');
 const Course = require('../models/courseModel');
+const AcademicCycle = require('../models/academicCycleModel');
 
 // @desc    Crear una nueva sección para un curso
 // @route   POST /api/courses/:courseId/sections
@@ -26,12 +27,23 @@ const createSection = async (req, res) => {
     res.status(201).json(section);
 };
 
-// @desc    Obtener todas las secciones de un curso
+// @desc    Obtener todas las secciones de un curso (MEJORADO)
 // @route   GET /api/courses/:courseId/sections
 // @access  Private
 const getSectionsForCourse = async (req, res) => {
     const { courseId } = req.params;
-    const sections = await Section.find({ course: courseId }).populate('instructor', 'name');
+    
+    const activeCycle = await AcademicCycle.findOne({ isActive: true });
+    if (!activeCycle) {
+        // Si no hay ciclo activo, no hay secciones que mostrar
+        return res.json([]);
+    }
+
+    const sections = await Section.find({ 
+        course: courseId, 
+        academicCycle: activeCycle._id 
+    }).populate('instructor', 'name');
+    
     res.json(sections);
 };
 

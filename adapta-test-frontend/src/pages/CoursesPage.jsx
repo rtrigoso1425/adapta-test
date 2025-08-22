@@ -48,7 +48,6 @@ const CoursesPage = () => {
                 >
                   <h2>{course.title}</h2>
                   <p>{course.description}</p>
-                  <small>Instructor Principal: {course.instructor.name}</small>
                 </div>
               </Link>
             ))}

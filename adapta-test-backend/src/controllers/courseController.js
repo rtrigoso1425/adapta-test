@@ -3,27 +3,20 @@ const Course = require('../models/courseModel');
 // @desc    Crear un nuevo curso
 // @route   POST /api/courses
 // @access  Private/Admin or Private/Coordinator
-// @desc    Crear un nuevo curso
-// @route   POST /api/courses
-// @access  Private/Admin or Private/Coordinator
 const createCourse = async (req, res) => {
-    // 1. Extraemos TODOS los datos del cuerpo, incluyendo el ID del instructor
-    const { title, description, instructor } = req.body;
+    // 👇 1. Extraer 'prerequisites' del body. Puede ser un array de IDs.
+    const { title, description, prerequisites } = req.body;
 
-    // 2. Validamos que tengamos todos los datos necesarios
-    if (!title || !description || !instructor) {
+    if (!title || !description) {
         res.status(400);
-        throw new Error('Por favor, proporciona título, descripción e ID del instructor.');
+        throw new Error('Por favor, proporciona título y descripción.');
     }
 
-    // NOTA: En una versión futura, podríamos validar aquí que el 'instructor'
-    // que se pasa es realmente un usuario con rol 'professor'.
-
-    // 3. Creamos el curso con el ID del instructor que viene en el body
     const course = new Course({
         title,
         description,
-        instructor, // <-- ¡CORREGIDO! Ahora usa el ID del body.
+        // 👇 2. Asignar los prerrequisitos. Si no se envían, será un array vacío.
+        prerequisites: prerequisites || [],
     });
 
     const createdCourse = await course.save();
@@ -34,9 +27,8 @@ const createCourse = async (req, res) => {
 // @route   GET /api/courses
 // @access  Private (para cualquier usuario logueado)
 const getCourses = async (req, res) => {
-    // Buscamos todos los cursos y populamos los datos del instructor
-    // con 'name' y 'email' para no tener que hacer otra consulta
-    const courses = await Course.find({}).populate('instructor', 'name email');
+    // 👇 HEMOS QUITADO EL .populate('instructor', 'name email') DE AQUÍ
+    const courses = await Course.find({});
     res.json(courses);
 };
 
@@ -45,7 +37,8 @@ const getCourses = async (req, res) => {
 // @route   GET /api/courses/:id
 // @access  Private
 const getCourseById = async (req, res) => {
-    const course = await Course.findById(req.params.id).populate('instructor', 'name');
+    // 👇 HEMOS QUITADO EL .populate('instructor', 'name') DE AQUÍ
+    const course = await Course.findById(req.params.id);
 
     if (course) {
         res.json(course);

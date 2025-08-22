@@ -29,10 +29,32 @@ const assignCoordinator = async (careerId, userId, token) => {
     return response.data;
 };
 
+const getMyCareer = async (token) => {
+    const config = { headers: { Authorization: `Bearer ${token}` } };
+    const response = await axios.get(API_URL + 'my-career', config);
+    return response.data;
+};
+
+// Añadir un curso a la malla curricular
+const addCourseToCurriculum = async (careerId, courseData, token) => {
+    const config = { headers: { Authorization: `Bearer ${token}` } };
+    const response = await axios.post(API_URL + careerId + '/curriculum', courseData, config);
+    return response.data;
+};
+
+const getCareerById = async (careerId, token) => {
+    const config = { headers: { Authorization: `Bearer ${token}` } };
+    const response = await axios.get(API_URL + careerId, config);
+    return response.data;
+};
+
 const careerService = {
     getCareers,
     createCareer,
     assignCoordinator,
+    addCourseToCurriculum,
+    getMyCareer,
+    getCareerById
 };
 
 export default careerService;

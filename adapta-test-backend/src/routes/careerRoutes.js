@@ -4,7 +4,9 @@ const {
     createCareer, 
     getCareers, 
     assignCoordinatorToCareer, 
-    addCourseToCurriculum 
+    addCourseToCurriculum,
+    getMyCareer,
+    getCareerById
 } = require('../controllers/careerController');
 const { protect, authorize } = require('../middleware/authMiddleware');
 
@@ -17,6 +19,11 @@ router.route('/')
 // 👇 NUEVAS RUTAS
 // ===============================================================
 
+// Ruta para que un coordinador obtenga su carrera asignada
+// GET /api/careers/my-career
+router.route('/my-career')
+    .get(protect, authorize('coordinator'), getMyCareer);
+
 // Ruta para que un Admin asigne un coordinador
 // PUT /api/careers/:id/coordinator
 router.route('/:id/coordinator')
@@ -27,5 +34,7 @@ router.route('/:id/coordinator')
 router.route('/:id/curriculum')
     .post(protect, authorize('coordinator'), addCourseToCurriculum);
 
+router.route('/:id')
+    .get(protect, getCareerById);
 
 module.exports = router;

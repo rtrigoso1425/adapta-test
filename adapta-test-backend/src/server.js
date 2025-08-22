@@ -13,6 +13,8 @@ const sectionRoutes = require('./routes/sectionRoutes');
 const sectionContentRoutes = require('./routes/section.content.routes'); // <-- IMPORTAR
 const evaluationRoutes = require('./routes/evaluationRoutes');
 const careerRoutes = require('./routes/careerRoutes');
+const academicProgressRoutes = require('./routes/academicProgressRoutes');
+const academicRecordRoutes = require('./routes/academicRecordRoutes');
 
 dotenv.config();
 connectDB();
@@ -36,6 +38,8 @@ app.use('/api/sections', sectionRoutes);
 app.use('/api/sections/:sectionId', sectionContentRoutes);
 app.use('/api/evaluations', evaluationRoutes);
 app.use('/api/careers', careerRoutes); // Maneja las carreras
+app.use('/api/progress', academicProgressRoutes);
+app.use('/api/academic-records', academicRecordRoutes);
 
 // Middleware para capturar rutas no encontradas (error 404)
 app.use((req, res, next) => {

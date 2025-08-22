@@ -1,15 +1,15 @@
 const express = require('express');
 const router = express.Router();
-const { protect } = require('../middleware/authMiddleware');
-const { registerUser, loginUser, getUserProfile } = require('../controllers/userController');
+const { protect, authorize } = require('../middleware/authMiddleware');
+const { registerUser, loginUser, getUserProfile, getUsers } = require('../controllers/userController');
 
 
-// Definimos la ruta para el registro de usuarios
-router.post('/', registerUser);
+router.route('/')
+    .post(registerUser)
+    .get(protect, authorize('admin'), getUsers);
 
-// Definimos la ruta para el inicio de sesión de usuarios
 router.post('/login', loginUser);
 
-router.get('/profile', protect, getUserProfile); // <-- RUTA PROTEGIDA
+router.get('/profile', protect, getUserProfile);
 
 module.exports = router;

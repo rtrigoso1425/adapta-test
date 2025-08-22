@@ -11,11 +11,19 @@ const careerSchema = new mongoose.Schema({
         type: String,
         required: [true, 'La descripción es obligatoria.'],
     },
+    // 👇 NUEVOS CAMPOS AÑADIDOS AQUÍ
+    degrees: {
+        type: [String], // Un array de strings
+        required: [true, 'Es necesario especificar al menos un grado o título.']
+    },
+    duration: {
+        type: String, // ej. "10 Ciclos" o "5 Años"
+        required: [true, 'La duración es obligatoria.']
+    },
     coordinator: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
     },
-    // MEJORA: Ahora el currículo está estructurado por ciclos.
     curriculum: [
         {
             cycleNumber: {

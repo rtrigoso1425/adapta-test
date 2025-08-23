@@ -15,6 +15,9 @@ const evaluationRoutes = require('./routes/evaluationRoutes');
 const careerRoutes = require('./routes/careerRoutes');
 const academicProgressRoutes = require('./routes/academicProgressRoutes');
 const academicRecordRoutes = require('./routes/academicRecordRoutes');
+const submissionRoutes = require('./routes/submissionRoutes'); // <-- 1. IMPORTAR
+
+
 
 dotenv.config();
 connectDB();
@@ -40,6 +43,8 @@ app.use('/api/evaluations', evaluationRoutes);
 app.use('/api/careers', careerRoutes); // Maneja las carreras
 app.use('/api/progress', academicProgressRoutes);
 app.use('/api/academic-records', academicRecordRoutes);
+app.use('/api/submissions', submissionRoutes); // <-- 2. AÑADIR ESTA LÍNEA
+
 
 // Middleware para capturar rutas no encontradas (error 404)
 app.use((req, res, next) => {

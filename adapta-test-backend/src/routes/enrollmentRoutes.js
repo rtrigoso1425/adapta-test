@@ -3,7 +3,8 @@ const router = express.Router();
 const { 
     enrollStudent,
     getMyEnrollments,
-    getMyEnrollmentHistory
+    getMyEnrollmentHistory,
+    enrollInBatch
 } = require('../controllers/enrollmentController');
 const { protect, authorize } = require('../middleware/authMiddleware');
 
@@ -17,4 +18,7 @@ router.route('/my-enrollments')
 router.route('/my-history')
     .get(protect, authorize('student'), getMyEnrollmentHistory);
 
-module.exports = router;
+router.route('/enroll-batch')
+    .post(protect, authorize('student'), enrollInBatch);
+
+    module.exports = router;

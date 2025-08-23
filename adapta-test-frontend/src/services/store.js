@@ -12,6 +12,8 @@ import careerReducer from '../features/careers/careerSlice';
 import usersReducer from '../features/users/usersSlice';
 import academicCycleReducer from '../features/academic-cycles/academicCycleSlice';
 import progressReducer from '../features/progress/progressSlice';
+import matriculaReducer from '../features/matricula/matriculaSlice';
+import submissionReducer from '../features/submissions/submissionSlice';
 
 export const store = configureStore({
     reducer: {
@@ -28,5 +30,7 @@ export const store = configureStore({
         users: usersReducer, // <-- AÑADIR
         academicCycles: academicCycleReducer, // <-- AÑADIR
         progress: progressReducer,
+        matricula: matriculaReducer,
+        submissions: submissionReducer,
     },
 });

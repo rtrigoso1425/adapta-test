@@ -7,11 +7,10 @@ import DashboardPage from "./pages/DashboardPage";
 import CoursesPage from "./pages/CoursesPage"; // <-- 3. IMPORTAR
 import CourseDetailPage from "./pages/CourseDetailPage";
 import PrivateRoute from "./components/PrivateRoute"; // <-- 1. IMPORTAR RUTA PRIVADA
-//import CourseManagementPage from "./pages/CourseManagementPage"; // <-- 2. IMPORTAR NUEVA PÁGINA
-import SectionManagementPage from './pages/SectionManagementPage.jsx'; // <-- 1. IMPORTA LA PÁGINA RENOMBRADA
+import SectionManagementPage from './pages/SectionManagementPage'; // <-- 1. IMPORTA LA PÁGINA RENOMBRADA
 import LearningPage from './pages/LearningPage'; // <-- IMPORTAR
-import EvaluationPage from "./pages/EvaluationPage.jsx";
-import CurriculumViewPage from "./pages/CurriculumViewPage.jsx";
+import EvaluationPage from "./pages/EvaluationPage";
+import CurriculumViewPage from "./pages/CurriculumViewPage";
 
 function App() {
   return (

@@ -37,6 +37,23 @@ export const getMySections = createAsyncThunk(
   }
 );
 
+export const updateApprovalCriteria = createAsyncThunk(
+  "sections/updateCriteria",
+  async ({ sectionId, criteriaData }, thunkAPI) => {
+    try {
+      const token = thunkAPI.getState().auth.user.token;
+      return await sectionService.updateApprovalCriteria(
+        sectionId,
+        criteriaData,
+        token
+      );
+    } catch (error) {
+      const message = error.response?.data?.message || error.message;
+      return thunkAPI.rejectWithValue(message);
+    }
+  }
+);
+
 export const sectionSlice = createSlice({
   name: "sections",
   initialState,
@@ -67,6 +84,11 @@ export const sectionSlice = createSlice({
         state.isLoading = false;
         state.isError = true;
         state.message = action.payload;
+      })
+      // eslint-disable-next-line no-unused-vars
+      .addCase(updateApprovalCriteria.fulfilled, (state, action) => {
+        // Opcional: podrías actualizar el estado de la sección si la tienes aquí
+        // Por ahora, no es necesario hacer nada, el componente principal se encargará
       });
   },
 });

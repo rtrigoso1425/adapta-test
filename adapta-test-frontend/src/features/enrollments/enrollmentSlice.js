@@ -55,11 +55,12 @@ export const enrollmentSlice = createSlice({
         state.message = action.payload;
       })
       .addCase(enrollStudent.fulfilled, (state, action) => {
-        alert(action.payload.message);
+        alert(action.payload.message); // Muestra "¡Matrícula exitosa!"
+        // Forzamos un refresco para que el dashboard del estudiante se actualice
+        window.location.reload();
       })
       .addCase(enrollStudent.rejected, (state, action) => {
-        // Mostramos el error de validación del backend
-        alert("Error de Matrícula: " + action.payload);
+        alert("Error de Matrícula: " + action.payload); // Muestra el error de validación del backend
       });
   },
 });

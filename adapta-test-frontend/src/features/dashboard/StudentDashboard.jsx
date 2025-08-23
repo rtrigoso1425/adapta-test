@@ -3,7 +3,7 @@ import { useSelector, useDispatch } from "react-redux";
 import { getMyProgress, reset } from "../progress/progressSlice";
 import CareerEnrollmentPage from "../../pages/CareerEnrollmentPage";
 import StudentMatriculaPage from "../../pages/StudentMatriculaPage";
-import StudentCoursesPage from "../../pages/StudentCoursesPage.jsx"; // <-- 1. IMPORTAR
+import StudentCoursesPage from "../../pages/StudentCoursesPage"; // <-- 1. IMPORTAR
 
 const StudentDashboard = () => {
   const dispatch = useDispatch();

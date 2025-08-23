@@ -1,6 +1,7 @@
 import axios from 'axios';
 // La URL base apunta a los cursos, ya que las secciones están anidadas
 const API_URL = '/api/courses/';
+const API_URL_SECTIONS = '/api/sections/';
 
 // Obtener las secciones de un curso específico
 const getSectionsForCourse = async (courseId, token) => {
@@ -19,5 +20,11 @@ const getMySections = async (token) => {
     return response.data;
 };
 
-const sectionService = { getSectionsForCourse, getMySections };
+const updateApprovalCriteria = async (sectionId, criteriaData, token) => {
+    const config = { headers: { Authorization: `Bearer ${token}` } };
+    const response = await axios.put(`${API_URL_SECTIONS}${sectionId}/criteria`, criteriaData, config);
+    return response.data;
+};
+
+const sectionService = { getSectionsForCourse, getMySections, updateApprovalCriteria };
 export default sectionService;

@@ -4,6 +4,12 @@ import { useParams } from "react-router-dom";
 
 // --- Acciones de Redux ---
 import {
+  getGradingPreview,
+  processSectionGrades,
+  reset as resetGrading,
+} from "../features/grading/gradingSlice";
+
+import {
   getSectionDetails,
   reset as resetLearning,
 } from "../features/learning/learningSlice";
@@ -173,105 +179,125 @@ const AssignmentsTab = ({ sectionId }) => {
 // ===================================================================================
 //  SUB-COMPONENTE: Pestaña para Criterios de Aprobación
 // ===================================================================================
-const ApprovalCriteriaTab = ({ section }) => {
-  const dispatch = useDispatch();
-  const [criteria, setCriteria] = useState(
-    section.approvalCriteria || {
-      mastery: { required: false, minPercentage: 85 },
-      completion: {
-        requiredLessonsPercentage: 95,
-        allAssignmentsRequired: false,
-      },
-    }
-  );
+const FinalGradingTab = ({ section }) => {
+    const dispatch = useDispatch();
+    
+    // Estado para el formulario de configuración de criterios
+    const [criteria, setCriteria] = useState(section.approvalCriteria || {
+        mastery: { required: false, minPercentage: 85 },
+        completion: { allAssignmentsRequired: false }
+    });
+    
+    const { previewData, isLoading } = useSelector((state) => state.grading);
 
-  const handleMasteryChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    setCriteria((prev) => ({
-      ...prev,
-      mastery: {
-        ...prev.mastery,
-        [name]: type === "checkbox" ? checked : Number(value),
-      },
-    }));
-  };
+    useEffect(() => {
+        dispatch(getGradingPreview(section._id));
+        return () => { dispatch(resetGrading()); };
+    }, [dispatch, section._id]);
 
-  const handleCompletionChange = (e) => {
-    const { name, checked } = e.target;
-    setCriteria((prev) => ({
-      ...prev,
-      completion: { ...prev.completion, [name]: checked },
-    }));
-  };
+    // 👇 MANEJADOR COMPLETO: Actualiza el estado de la maestría
+    const handleMasteryChange = (e) => {
+        const { name, value, type, checked } = e.target;
+        setCriteria(prev => ({ 
+            ...prev, 
+            mastery: { 
+                ...prev.mastery, 
+                [name]: type === 'checkbox' ? checked : Number(value) 
+            } 
+        }));
+    };
+    
+    // 👇 MANEJADOR COMPLETO: Actualiza el estado de la completitud
+    const handleCompletionChange = (e) => {
+        const { name, checked } = e.target;
+        setCriteria(prev => ({ 
+            ...prev, 
+            completion: { 
+                ...prev.completion, 
+                [name]: checked 
+            } 
+        }));
+    };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    dispatch(
-      updateApprovalCriteria({ sectionId: section._id, criteriaData: criteria })
-    )
-      .unwrap()
-      .then(() => alert("Criterios de aprobación guardados exitosamente."))
-      .catch((error) =>
-        alert("Error al guardar los criterios: " + error.message)
-      );
-  };
+    const handleCriteriaSubmit = (e) => {
+        e.preventDefault();
+        dispatch(updateApprovalCriteria({ sectionId: section._id, criteriaData: criteria }))
+            .unwrap()
+            .then(() => {
+                alert('Criterios guardados. La tabla de vista previa se actualizará.');
+                dispatch(getGradingPreview(section._id));
+            })
+            .catch((error) => alert('Error al guardar: ' + error.message));
+    };
 
-  return (
-    <div>
-      <h2>Configurar Criterios de Aprobación</h2>
-      <form onSubmit={handleSubmit}>
-        <fieldset style={{ marginTop: "20px" }}>
-          <legend>
-            <strong>Pilar 1: Nivel de Maestría</strong>
-          </legend>
-          <input
-            type="checkbox"
-            id="masteryRequired"
-            name="required"
-            checked={criteria.mastery?.required || false}
-            onChange={handleMasteryChange}
-          />
-          <label htmlFor="masteryRequired">
-            {" "}
-            Requerir un nivel de maestría mínimo en todos los temas.
-          </label>
-          {criteria.mastery?.required && (
-            <div style={{ marginTop: "10px", marginLeft: "25px" }}>
-              <label htmlFor="minPercentage">Porcentaje mínimo (%): </label>
-              <input
-                type="number"
-                id="minPercentage"
-                name="minPercentage"
-                min="1"
-                max="100"
-                value={criteria.mastery?.minPercentage || 85}
-                onChange={handleMasteryChange}
-              />
+    const handleProcessGrades = () => {
+        if (window.confirm('¿Estás seguro de que quieres procesar las calificaciones finales? Esta acción es definitiva.')) {
+            dispatch(processSectionGrades(section._id));
+        }
+    };
+
+    return (
+        <div>
+            {/* --- SECCIÓN 1: Formulario de Configuración --- */}
+            <div style={{border: '2px dashed #ccc', padding: '20px', borderRadius: '5px'}}>
+                <h3>1. Configurar Criterios de Aprobación</h3>
+                <form onSubmit={handleCriteriaSubmit}>
+                    <fieldset>
+                        <legend><strong>Nivel de Maestría</strong></legend>
+                        <input type="checkbox" id="masteryRequired" name="required" checked={criteria.mastery?.required || false} onChange={handleMasteryChange}/>
+                        <label htmlFor="masteryRequired"> Requerir un nivel de maestría mínimo.</label>
+                        {criteria.mastery?.required && (
+                            <div style={{ marginTop: '10px', marginLeft: '25px' }}>
+                                <label htmlFor="minPercentage">Porcentaje mínimo (%): </label>
+                                <input type="number" id="minPercentage" name="minPercentage" min="1" max="100" value={criteria.mastery?.minPercentage || 85} onChange={handleMasteryChange}/>
+                            </div>
+                        )}
+                    </fieldset>
+                    <fieldset style={{ marginTop: '15px' }}>
+                        <legend><strong>Participación</strong></legend>
+                        <input type="checkbox" id="allAssignmentsRequired" name="allAssignmentsRequired" checked={criteria.completion?.allAssignmentsRequired || false} onChange={handleCompletionChange}/>
+                        <label htmlFor="allAssignmentsRequired"> Requerir la entrega de TODAS las tareas.</label>
+                    </fieldset>
+                    <button type="submit" style={{ marginTop: '15px' }}>Guardar Criterios</button>
+                </form>
             </div>
-          )}
-        </fieldset>
-        <fieldset style={{ marginTop: "20px" }}>
-          <legend>
-            <strong>Pilar 2: Completitud y Participación</strong>
-          </legend>
-          <input
-            type="checkbox"
-            id="allAssignmentsRequired"
-            name="allAssignmentsRequired"
-            checked={criteria.completion?.allAssignmentsRequired || false}
-            onChange={handleCompletionChange}
-          />
-          <label htmlFor="allAssignmentsRequired">
-            {" "}
-            Requerir la entrega de TODAS las tareas.
-          </label>
-        </fieldset>
-        <button type="submit" style={{ marginTop: "20px" }}>
-          Guardar Criterios
-        </button>
-      </form>
-    </div>
-  );
+
+            {/* --- SECCIÓN 2: Vista Previa y Procesamiento --- */}
+            <div style={{marginTop: '40px'}}>
+                <h3>2. Vista Previa y Procesamiento Final</h3>
+                <p>Esta tabla muestra el cumplimiento de cada estudiante según los criterios guardados.</p>
+                {isLoading ? <p>Cargando vista previa...</p> : (
+                    <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '20px' }}>
+                        <thead>
+                            <tr style={{ background: '#f4f4f4' }}>
+                                <th style={{ padding: '10px', border: '1px solid #ddd' }}>Estudiante</th>
+                                <th style={{ padding: '10px', border: '1px solid #ddd' }}>Criterios Cumplidos</th>
+                                <th style={{ padding: '10px', border: '1px solid #ddd' }}>Estado Final</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {previewData.map(student => (
+                                <tr key={student.enrollmentId}>
+                                    <td style={{ padding: '10px', border: '1px solid #ddd' }}>{student.student.name}</td>
+                                    <td style={{ padding: '10px', border: '1px solid #ddd' }}>
+                                        <ul style={{margin: 0, paddingLeft: '20px'}}>
+                                            {student.checks.map((check, index) => (
+                                                <li key={index}><strong>{check.name}:</strong> {check.status} {check.isMet ? '✅' : '❌'}</li>
+                                            ))}
+                                        </ul>
+                                    </td>
+                                    <td style={{ padding: '10px', border: '1px solid #ddd', fontWeight: 'bold' }}>{student.finalStatus}</td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                )}
+                <button onClick={handleProcessGrades} disabled={isLoading} style={{ marginTop: '20px', padding: '10px 20px', fontSize: '1rem', background: 'darkred', color: 'white' }}>
+                    {isLoading ? 'Procesando...' : 'Procesar Calificaciones Finales'}
+                </button>
+            </div>
+        </div>
+    );
 };
 
 // ===================================================================================
@@ -451,10 +477,10 @@ const SectionManagementPage = () => {
           Tareas
         </button>
         <button
-          onClick={() => setActiveTab("criteria")}
+          onClick={() => setActiveTab("grading")}
           style={{
             ...styles.navButton,
-            ...(activeTab === "criteria" && styles.activeNavButton),
+            ...(activeTab === "grading" && styles.activeNavButton),
           }}
         >
           Criterios de Aprobación
@@ -466,7 +492,7 @@ const SectionManagementPage = () => {
         {activeTab === "assignments" && (
           <AssignmentsTab sectionId={section._id} />
         )}
-        {activeTab === "criteria" && <ApprovalCriteriaTab section={section} />}
+        {activeTab === "grading" && <FinalGradingTab section={section} />}
       </div>
     </div>
   );

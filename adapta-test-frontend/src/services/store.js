@@ -14,6 +14,7 @@ import academicCycleReducer from '../features/academic-cycles/academicCycleSlice
 import progressReducer from '../features/progress/progressSlice';
 import matriculaReducer from '../features/matricula/matriculaSlice';
 import submissionReducer from '../features/submissions/submissionSlice';
+import gradingReducer from '../features/grading/gradingSlice'; // <-- AÑADIR
 
 export const store = configureStore({
     reducer: {
@@ -32,5 +33,6 @@ export const store = configureStore({
         progress: progressReducer,
         matricula: matriculaReducer,
         submissions: submissionReducer,
+        grading: gradingReducer
     },
 });

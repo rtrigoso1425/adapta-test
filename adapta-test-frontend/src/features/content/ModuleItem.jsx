@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
+import { useParams } from "react-router-dom";
 import { Link } from "react-router-dom";
 
 // Importamos TODAS las acciones que este componente necesitará
@@ -7,6 +8,8 @@ import {
   getLessonsForModule,
   createLessonInModule,
   resetLessons,
+  markLessonAsComplete,
+  getCompletedLessons,
 } from "./contentSlice";
 import {
   getQuestionsForModule,
@@ -75,9 +78,10 @@ const ModuleItem = ({ module }) => {
   const [isOpen, setIsOpen] = useState(false);
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.auth);
+  const { id: sectionId } = useParams();
 
   // Obtenemos los estados de lecciones Y preguntas
-  const { lessonsByModule, isLoadingLessons } = useSelector(
+  const { lessonsByModule, isLoadingLessons, completedLessons } = useSelector(
     (state) => state.content
   );
   const { questionsByModule, isLoading: isLoadingQuestions } = useSelector(
@@ -91,13 +95,21 @@ const ModuleItem = ({ module }) => {
     if (isOpen) {
       // Cuando se abre el módulo, pedimos tanto sus lecciones como sus preguntas
       dispatch(getLessonsForModule(module._id));
-      dispatch(getQuestionsForModule(module._id));
+      
+      dispatch(getCompletedLessons(sectionId));
+      if (user.role === 'professor') {
+                dispatch(getQuestionsForModule(module._id));
+            }
     } else {
       // Cuando se cierra, limpiamos ambos estados para ese módulo
       dispatch(resetLessons(module._id));
       dispatch(resetQuestions()); // El reset de questions es global por ahora
     }
-  }, [isOpen, dispatch, module._id]);
+  }, [isOpen, dispatch, module._id, sectionId, user.role]);
+
+  const handleMarkAsComplete = (lessonId) => {
+    dispatch(markLessonAsComplete({ moduleId: module._id, lessonId, sectionId }));
+  };
 
   return (
     <div
@@ -124,9 +136,29 @@ const ModuleItem = ({ module }) => {
               <p>Cargando...</p>
             ) : lessons.length > 0 ? (
               <ul>
-                {lessons.map((lesson) => (
-                  <li key={lesson._id}>{lesson.title}</li>
-                ))}
+                {lessons.map((lesson) => {
+                  const isCompleted = completedLessons.includes(lesson._id);
+                  return (
+                    <li
+                      key={lesson._id}
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                      }}
+                    >
+                      {lesson.title}
+                      <button
+                        onClick={() => handleMarkAsComplete(lesson._id)}
+                        disabled={isCompleted}
+                      >
+                        {isCompleted
+                          ? "✅ Completado"
+                          : "Marcar como completado"}
+                      </button>
+                    </li>
+                  );
+                })}
               </ul>
             ) : (
               <p>No hay lecciones en este módulo.</p>

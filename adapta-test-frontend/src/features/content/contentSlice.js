@@ -6,6 +6,7 @@ const initialState = {
   course: null,
   modules: [],
   lessonsByModule: {},
+  completedLessons: [],
   isLoading: false,
   isLoadingLessons: false,
   isError: false,
@@ -102,6 +103,40 @@ export const createLessonInModule = createAsyncThunk(
   }
 );
 
+export const getCompletedLessons = createAsyncThunk(
+  "content/getCompleted",
+  async (sectionId, thunkAPI) => {
+    try {
+      const token = thunkAPI.getState().auth.user.token;
+      return await contentService.getCompletedLessons(sectionId, token);
+    } catch (error) {
+      const message =
+        error.response?.data?.message || error.message || error.toString();
+      return thunkAPI.rejectWithValue(message);
+    }
+  }
+);
+
+export const markLessonAsComplete = createAsyncThunk(
+  "content/markComplete",
+  async ({ moduleId, lessonId, sectionId }, thunkAPI) => {
+    try {
+      const token = thunkAPI.getState().auth.user.token;
+      await contentService.markLessonAsComplete(
+        moduleId,
+        lessonId,
+        sectionId,
+        token
+      );
+      return lessonId;
+    } catch (error) {
+      const message =
+        error.response?.data?.message || error.message || error.toString();
+      return thunkAPI.rejectWithValue(message);
+    }
+  }
+);
+
 export const contentSlice = createSlice({
   name: "content",
   initialState,
@@ -161,6 +196,14 @@ export const contentSlice = createSlice({
           state.lessonsByModule[moduleId].push(action.payload);
         } else {
           state.lessonsByModule[moduleId] = [action.payload];
+        }
+      })
+      .addCase(getCompletedLessons.fulfilled, (state, action) => {
+        state.completedLessons = action.payload;
+      })
+      .addCase(markLessonAsComplete.fulfilled, (state, action) => {
+        if (!state.completedLessons.includes(action.payload)) {
+          state.completedLessons.push(action.payload);
         }
       });
   },

@@ -16,6 +16,8 @@ const careerRoutes = require('./routes/careerRoutes');
 const academicProgressRoutes = require('./routes/academicProgressRoutes');
 const academicRecordRoutes = require('./routes/academicRecordRoutes');
 const submissionRoutes = require('./routes/submissionRoutes'); // <-- 1. IMPORTAR
+const gradingRoutes = require('./routes/gradingRoutes'); // <-- IMPORTAR
+
 
 
 
@@ -44,6 +46,8 @@ app.use('/api/careers', careerRoutes); // Maneja las carreras
 app.use('/api/progress', academicProgressRoutes);
 app.use('/api/academic-records', academicRecordRoutes);
 app.use('/api/submissions', submissionRoutes); // <-- 2. AÑADIR ESTA LÍNEA
+app.use('/api/grading', gradingRoutes); // <-- AÑADIR
+
 
 
 // Middleware para capturar rutas no encontradas (error 404)

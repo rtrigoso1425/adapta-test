@@ -28,10 +28,23 @@ const createCourse = async (courseData, token) => {
     return response.data;
 };
 
+// Subir un sílabus para un curso
+const uploadSyllabus = async (courseId, formData, token) => {
+    const config = {
+        headers: {
+            'Content-Type': 'multipart/form-data',
+            Authorization: `Bearer ${token}`,
+        },
+    };
+    const response = await axios.post(`${API_URL}${courseId}/upload-syllabus`, formData, config);
+    return response.data;
+};
+
 const courseService = {
     getCourses,
     getMyCourses,
     createCourse,
+    uploadSyllabus
 };
 
 export default courseService;

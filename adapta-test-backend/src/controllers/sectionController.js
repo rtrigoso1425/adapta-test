@@ -62,8 +62,9 @@ const getMySections = async (req, res) => {
 // @route   GET /api/sections/:id
 // @access  Private
 const getSectionById = async (req, res) => {
+    // 👇 CAMBIO: Le pedimos que popule el 'title', 'description' y 'syllabus' del curso.
     const section = await Section.findById(req.params.id)
-        .populate('course', 'title')
+        .populate('course', 'title description syllabus') // <-- LÍNEA MODIFICADA
         .populate('instructor', 'name');
 
     if (section) {

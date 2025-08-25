@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { getMyCareer, addCourseToCurriculum, reset as resetCareers } from '../careers/careerSlice';
-import { getCourses, reset as resetCourses } from '../courses/courseSlice';
+import { getCourses, uploadSyllabus, reset as resetCourses } from '../courses/courseSlice';
 
 // --- Sub-componente: Formulario para gestionar la Malla Curricular ---
 const CurriculumForm = ({ careerId }) => {
@@ -59,6 +59,51 @@ const CurriculumForm = ({ careerId }) => {
     );
 };
 
+// ===================================================================================
+//  NUEVO SUB-COMPONENTE: Para Subir el Sílabus
+// ===================================================================================
+const SyllabusUploader = ({ coursesInCurriculum }) => {
+    const dispatch = useDispatch();
+    const [selectedCourseId, setSelectedCourseId] = useState('');
+    const [selectedFile, setSelectedFile] = useState(null);
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        if (!selectedCourseId || !selectedFile) {
+            alert('Por favor, selecciona un curso y un archivo PDF.');
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('syllabus', selectedFile); // 'syllabus' debe coincidir con el nombre en upload.single()
+
+        dispatch(uploadSyllabus({ courseId: selectedCourseId, formData }));
+    };
+
+    return (
+        <div style={{ border: '2px dashed #ccc', padding: '20px', marginTop: '30px' }}>
+            <h3>Subir o Actualizar Sílabus de un Curso</h3>
+            <form onSubmit={handleSubmit}>
+                <div style={{ marginBottom: '15px' }}>
+                    <label>Selecciona el Curso:</label><br/>
+                    <select value={selectedCourseId} onChange={(e) => setSelectedCourseId(e.target.value)} required style={{ width: '100%', padding: '8px' }}>
+                        <option value="">-- Selecciona un curso de tu malla --</option>
+                        {coursesInCurriculum.map(course => (
+                            <option key={course._id} value={course._id}>{course.title}</option>
+                        ))}
+                    </select>
+                </div>
+                <div style={{ marginBottom: '15px' }}>
+                    <label>Archivo PDF del Sílabus:</label><br/>
+                    <input type="file" accept=".pdf" onChange={(e) => setSelectedFile(e.target.files[0])} required />
+                </div>
+                <button type="submit">Subir Sílabus</button>
+            </form>
+        </div>
+    );
+};
+
+
 
 // --- Componente Principal: Dashboard del Coordinador ---
 const CoordinatorDashboard = () => {
@@ -78,7 +123,7 @@ const CoordinatorDashboard = () => {
     if (isLoading || !myCareer) {
         return <h3>Cargando datos del coordinador...</h3>;
     }
-
+    const allCoursesInCurriculum = myCareer.curriculum.flatMap(cycle => cycle.courses);
     return (
         <div>
             <h1>Gestión de Carrera: {myCareer.name}</h1>
@@ -103,6 +148,7 @@ const CoordinatorDashboard = () => {
             )}
 
             <CurriculumForm careerId={myCareer._id} />
+            <SyllabusUploader coursesInCurriculum={allCoursesInCurriculum} />
         </div>
     );
 };

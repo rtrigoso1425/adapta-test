@@ -1,4 +1,5 @@
 const Course = require('../models/courseModel');
+const upload = require('../config/upload');
 
 // @desc    Crear un nuevo curso
 // @route   POST /api/courses
@@ -48,8 +49,31 @@ const getCourseById = async (req, res) => {
     }
 };
 
+// @desc    Subir un sílabus para un curso
+// @route   POST /api/courses/:courseId/upload-syllabus
+// @access  Private/Coordinator
+const uploadSyllabus = async (req, res) => {
+    const course = await Course.findById(req.params.courseId);
+
+    if (!course) {
+        res.status(404);
+        throw new Error('Curso no encontrado.');
+    }
+
+    // El archivo ya ha sido subido por el middleware de multer
+    if (req.file) {
+        course.syllabus = `/${req.file.path.replace(/\\/g, "/")}`; // Guardamos la ruta del archivo
+        const updatedCourse = await course.save();
+        res.json(updatedCourse);
+    } else {
+        res.status(400);
+        throw new Error('Por favor, sube un archivo PDF válido.');
+    }
+};
+
 module.exports = {
     createCourse,
     getCourses,
     getCourseById,
+    uploadSyllabus
 };

@@ -624,6 +624,15 @@ const SectionManagementPage = () => {
   return (
     <div>
       <h1>Gestionando: {section.course.title}</h1>
+      {section.course.syllabus && (
+        <a
+          href={`http://localhost:5000${section.course.syllabus}`}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <button style={{ marginBottom: "10px" }}>Ver Sílabus Oficial</button>
+        </a>
+      )}
       <h3>Sección: {section.sectionCode}</h3>
       <hr />
 

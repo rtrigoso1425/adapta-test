@@ -1,9 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const sectionRoutes = require('./sectionRoutes');
+const upload = require('../config/upload');
 
 // Importamos TODOS los controladores que necesitamos aquí
-const { createCourse, getCourses, getCourseById} = require('../controllers/courseController');
+const { createCourse, getCourses, getCourseById, uploadSyllabus} = require('../controllers/courseController');
 const { protect, authorize } = require('../middleware/authMiddleware');
 
 // --- Rutas para los Cursos en sí ---
@@ -20,5 +21,10 @@ router.route('/')
 router.use('/:courseId/sections', sectionRoutes);
 
 router.route('/:id').get(protect, getCourseById);
+
+// Ruta para subir el sílabus (solo para coordinadores)
+// Usa el middleware 'upload.single('syllabus')' para procesar el archivo
+router.route('/:courseId/upload-syllabus')
+    .post(protect, authorize('coordinator'), upload.single('syllabus'), uploadSyllabus);
 
 module.exports = router;

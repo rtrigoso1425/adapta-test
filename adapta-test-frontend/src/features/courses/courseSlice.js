@@ -54,6 +54,19 @@ export const createCourse = createAsyncThunk(
   }
 );
 
+export const uploadSyllabus = createAsyncThunk(
+  "courses/uploadSyllabus",
+  async ({ courseId, formData }, thunkAPI) => {
+    try {
+      const token = thunkAPI.getState().auth.user.token;
+      return await courseService.uploadSyllabus(courseId, formData, token);
+    } catch (error) {
+      const message = error.response?.data?.message || error.message;
+      return thunkAPI.rejectWithValue(message);
+    }
+  }
+);
+
 export const courseSlice = createSlice({
   name: "course",
   initialState,
@@ -90,6 +103,19 @@ export const courseSlice = createSlice({
       })
       .addCase(createCourse.fulfilled, (state, action) => {
         state.courses.push(action.payload);
+      })
+      .addCase(uploadSyllabus.fulfilled, (state, action) => {
+        // Actualizamos el curso en nuestro estado local con la nueva ruta del sílabus
+        const index = state.courses.findIndex(
+          (c) => c._id === action.payload._id
+        );
+        if (index !== -1) {
+          state.courses[index] = action.payload;
+        }
+        alert("Sílabus subido exitosamente.");
+      })
+      .addCase(uploadSyllabus.rejected, (state, action) => {
+        alert("Error al subir el sílabus: " + action.payload);
       });
   },
 });

@@ -3,6 +3,7 @@ import submissionService from "./submissionService";
 
 const initialState = {
   submissions: [],
+  mySubmission: null,
   isLoading: false,
   isSuccess: false,
   isError: false,
@@ -28,16 +29,23 @@ export const createSubmission = createAsyncThunk(
   }
 );
 
-export const getSubmissionsForAssignment = createAsyncThunk('submissions/getForAssignment', async ({ sectionId, assignmentId }, thunkAPI) => {
+export const getSubmissionsForAssignment = createAsyncThunk(
+  "submissions/getForAssignment",
+  async ({ sectionId, assignmentId }, thunkAPI) => {
     try {
-        const token = thunkAPI.getState().auth.user.token;
-        // Pasamos ambos IDs al servicio
-        return await submissionService.getSubmissionsForAssignment(sectionId, assignmentId, token);
+      const token = thunkAPI.getState().auth.user.token;
+      // Pasamos ambos IDs al servicio
+      return await submissionService.getSubmissionsForAssignment(
+        sectionId,
+        assignmentId,
+        token
+      );
     } catch (error) {
-        const message = error.response?.data?.message || error.message;
-        return thunkAPI.rejectWithValue(message);
+      const message = error.response?.data?.message || error.message;
+      return thunkAPI.rejectWithValue(message);
     }
-});
+  }
+);
 
 export const gradeSubmission = createAsyncThunk(
   "submissions/grade",
@@ -55,6 +63,17 @@ export const gradeSubmission = createAsyncThunk(
     }
   }
 );
+
+export const getMySubmission = createAsyncThunk('submissions/getMy', async ({ sectionId, assignmentId }, thunkAPI) => {
+    try {
+        const token = thunkAPI.getState().auth.user.token;
+        // Pasamos ambos IDs al servicio
+        return await submissionService.getMySubmission(sectionId, assignmentId, token);
+    } catch (error) {
+        const message = (error.response?.data?.message) || error.message;
+        return thunkAPI.rejectWithValue(message);
+    }
+});
 
 export const submissionSlice = createSlice({
   name: "submissions",
@@ -96,6 +115,14 @@ export const submissionSlice = createSlice({
           state.submissions[index] = action.payload;
         }
         alert("Calificación guardada exitosamente.");
+      })
+      .addCase(getMySubmission.pending, (state) => {
+        state.isLoading = true;
+        state.mySubmission = null; // Limpiar antes de la nueva petición
+      })
+      .addCase(getMySubmission.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.mySubmission = action.payload; // Guardamos la entrega (o null si no existe)
       });
   },
 });

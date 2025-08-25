@@ -108,8 +108,30 @@ const gradeSubmission = async (req, res) => {
   res.json(updatedSubmission);
 };
 
+// @desc    Estudiante obtiene su propia entrega para una tarea
+// @route   GET /api/assignments/:assignmentId/mysubmission
+// @access  Private/Student
+const getMySubmissionForAssignment = async (req, res) => {
+  const { assignmentId } = req.params;
+  const studentId = req.user._id;
+
+  const submission = await Submission.findOne({
+    assignment: assignmentId,
+    student: studentId,
+  });
+
+  if (!submission) {
+    // No es un error, simplemente significa que no ha entregado la tarea.
+    // Enviamos null para que el frontend sepa que debe mostrar el formulario.
+    return res.json(null);
+  }
+
+  res.json(submission);
+};
+
 module.exports = {
   createSubmission,
   getSubmissionsForAssignment,
   gradeSubmission,
+  getMySubmissionForAssignment
 };

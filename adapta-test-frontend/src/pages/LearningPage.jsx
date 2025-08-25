@@ -18,50 +18,85 @@ import {
 import {
   createSubmission,
   reset as resetSubmissions,
+  getMySubmission,
 } from "../features/submissions/submissionSlice";
 
 // --- Componentes ---
 import ModuleItem from "../features/content/ModuleItem";
 
 // ===================================================================================
-//  SUB-COMPONENTE: Modal para Entregar una Tarea
+//  NUEVO SUB-COMPONENTE: Modal Inteligente para Tareas
 // ===================================================================================
-const SubmitAssignmentModal = ({ assignment, onClose }) => {
+const AssignmentModal = ({ assignment, onClose }) => {
   const dispatch = useDispatch();
+  const { mySubmission, isLoading } = useSelector((state) => state.submissions);
   const [content, setContent] = useState("");
-  const { isLoading } = useSelector((state) => state.submissions);
+
+  useEffect(() => {
+    // Al abrir, pedimos el estado de nuestra entrega para esta tarea
+    if (assignment?.section && assignment?._id) {
+      // Creamos el objeto con ambos IDs
+      const submissionDetails = {
+        sectionId: assignment.section,
+        assignmentId: assignment._id,
+      };
+      dispatch(getMySubmission(submissionDetails));
+    }
+  }, [dispatch, assignment]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
     const submissionData = { content };
-
-    // Creamos el objeto con las 3 propiedades que el thunk espera:
-    // sectionId, assignmentId, y submissionData.
-    const submissionDetails = {
-      sectionId: assignment.section, // El ID de la sección viene con la tarea
-      assignmentId: assignment._id,
-      submissionData: submissionData,
-    };
-
-    dispatch(createSubmission(submissionDetails))
+    dispatch(
+      createSubmission({
+        sectionId: assignment.section,
+        assignmentId: assignment._id,
+        submissionData,
+      })
+    )
       .unwrap()
       .then(() => {
         onClose(); // Cierra el modal si la entrega fue exitosa
-      })
-      .catch(() => {
-        // No es necesario hacer nada aquí, el slice ya muestra el alert de error
       });
   };
 
-  return (
-    <div style={styles.modalOverlay}>
-      <div style={styles.modalContent}>
-        <h2>Entregar Tarea: {assignment.title}</h2>
-        <p>
-          <strong>Instrucciones:</strong>{" "}
-          {assignment.instructions || "No se proporcionaron instrucciones."}
-        </p>
-        <hr />
+  // --- Lógica para decidir qué mostrar dentro del modal ---
+  const renderContent = () => {
+    if (isLoading) {
+      return <p>Verificando estado de la entrega...</p>;
+    }
+
+    if (mySubmission) {
+      // Si ya existe una entrega, mostramos la información
+      return (
+        <div>
+          <h3>Tu Entrega</h3>
+          <p style={styles.submissionBox}>{mySubmission.content}</p>
+          <hr />
+          <h4>Calificación</h4>
+          {mySubmission.grade != null ? (
+            <div>
+              <p>
+                <strong>Nota:</strong> {mySubmission.grade}
+              </p>
+              <p>
+                <strong>Feedback del Profesor:</strong>{" "}
+                {mySubmission.feedback || "Sin comentarios."}
+              </p>
+            </div>
+          ) : (
+            <p>Tu tarea ha sido entregada y está pendiente de calificación.</p>
+          )}
+          <div style={styles.modalActions}>
+            <button type="button" onClick={onClose}>
+              Cerrar
+            </button>
+          </div>
+        </div>
+      );
+    } else {
+      // Si no hay entrega, mostramos el formulario
+      return (
         <form onSubmit={handleSubmit}>
           <label htmlFor="submission-content">Tu Respuesta:</label>
           <textarea
@@ -81,6 +116,40 @@ const SubmitAssignmentModal = ({ assignment, onClose }) => {
             </button>
           </div>
         </form>
+      );
+    }
+  };
+
+  return (
+    <div style={styles.modalOverlay}>
+      <div style={styles.modalContent}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}
+        >
+          <h2>Tarea: {assignment.title}</h2>
+          <button
+            onClick={onClose}
+            style={{
+              height: "40px",
+              background: "none",
+              border: "none",
+              fontSize: "1.5rem",
+              cursor: "pointer",
+            }}
+          >
+            &times;
+          </button>
+        </div>
+        <p>
+          <strong>Instrucciones:</strong>{" "}
+          {assignment.instructions || "No se proporcionaron instrucciones."}
+        </p>
+        <hr />
+        {renderContent()}
       </div>
     </div>
   );
@@ -148,7 +217,7 @@ const LearningPage = () => {
         <div
           style={{ flex: 1, borderLeft: "1px solid #ccc", paddingLeft: "20px" }}
         >
-          <h2>Tareas Pendientes</h2>
+          <h2>Tareas</h2>
           {isLoadingAssignments ? (
             <p>Cargando tareas...</p>
           ) : (
@@ -158,7 +227,7 @@ const LearningPage = () => {
                   <strong>{assignment.title}</strong>
                 </p>
                 <button onClick={() => setSelectedAssignment(assignment)}>
-                  Ver y Entregar
+                  Ver Tarea
                 </button>
               </div>
             ))
@@ -168,7 +237,7 @@ const LearningPage = () => {
 
       {/* El modal se renderiza aquí cuando hay una tarea seleccionada */}
       {selectedAssignment && (
-        <SubmitAssignmentModal
+        <AssignmentModal
           assignment={selectedAssignment}
           onClose={() => setSelectedAssignment(null)}
         />

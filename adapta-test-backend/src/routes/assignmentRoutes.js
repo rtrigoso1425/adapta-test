@@ -7,6 +7,7 @@ const {
 const {
   createSubmission,
   getSubmissionsForAssignment,
+  getMySubmissionForAssignment
 } = require("../controllers/submissionController");
 const { protect, authorize } = require("../middleware/authMiddleware");
 
@@ -26,5 +27,10 @@ router
 router
   .route("/:assignmentId/submissions")
   .get(protect, authorize("professor"), getSubmissionsForAssignment);
+
+// Estudiante obtiene su entrega para una tarea
+router
+  .route("/:assignmentId/mysubmission")
+  .get(protect, authorize("student"), getMySubmissionForAssignment);
 
 module.exports = router;

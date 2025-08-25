@@ -95,11 +95,13 @@ const ModuleItem = ({ module }) => {
     if (isOpen) {
       // Cuando se abre el módulo, pedimos tanto sus lecciones como sus preguntas
       dispatch(getLessonsForModule(module._id));
-      
-      dispatch(getCompletedLessons(sectionId));
-      if (user.role === 'professor') {
-                dispatch(getQuestionsForModule(module._id));
-            }
+
+      if (user.role === "student") {
+        dispatch(getCompletedLessons(sectionId));
+      } else if (user.role === "professor") {
+        // El profesor necesita las preguntas para su banco
+        dispatch(getQuestionsForModule(module._id));
+      }
     } else {
       // Cuando se cierra, limpiamos ambos estados para ese módulo
       dispatch(resetLessons(module._id));
@@ -108,7 +110,9 @@ const ModuleItem = ({ module }) => {
   }, [isOpen, dispatch, module._id, sectionId, user.role]);
 
   const handleMarkAsComplete = (lessonId) => {
-    dispatch(markLessonAsComplete({ moduleId: module._id, lessonId, sectionId }));
+    dispatch(
+      markLessonAsComplete({ moduleId: module._id, lessonId, sectionId })
+    );
   };
 
   return (
@@ -135,7 +139,7 @@ const ModuleItem = ({ module }) => {
             {isLoadingLessons ? (
               <p>Cargando...</p>
             ) : lessons.length > 0 ? (
-              <ul>
+              <ul style={{ listStyle: "none", padding: 0 , marginTop: "10px"}}>
                 {lessons.map((lesson) => {
                   const isCompleted = completedLessons.includes(lesson._id);
                   return (
@@ -145,17 +149,23 @@ const ModuleItem = ({ module }) => {
                         display: "flex",
                         justifyContent: "space-between",
                         alignItems: "center",
+                        padding: "5px 0",
                       }}
                     >
-                      {lesson.title}
-                      <button
-                        onClick={() => handleMarkAsComplete(lesson._id)}
-                        disabled={isCompleted}
-                      >
-                        {isCompleted
-                          ? "✅ Completado"
-                          : "Marcar como completado"}
-                      </button>
+                      <span>{lesson.title}</span>
+
+                      {/* 👇 AQUÍ ESTÁ LA CORRECCIÓN CLAVE 👇 */}
+                      {/* Este botón solo se renderiza si el usuario es un estudiante */}
+                      {user.role === "student" && (
+                        <button
+                          onClick={() => handleMarkAsComplete(lesson._id)}
+                          disabled={isCompleted}
+                        >
+                          {isCompleted
+                            ? "✅ Completado"
+                            : "Marcar como completado"}
+                        </button>
+                      )}
                     </li>
                   );
                 })}

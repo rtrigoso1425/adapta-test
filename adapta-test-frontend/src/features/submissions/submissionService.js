@@ -26,10 +26,20 @@ const gradeSubmission = async (submissionId, gradeData, token) => {
     return response.data;
 };
 
+// Obtener la entrega del estudiante para una tarea
+const getMySubmission = async (sectionId, assignmentId, token) => {
+    const config = { headers: { Authorization: `Bearer ${token}` } };
+    // Construimos la URL completa y correcta
+    const response = await axios.get(`${API_URL_SECTIONS}${sectionId}/assignments/${assignmentId}/mysubmission`, config);
+    return response.data;
+};
+
 const submissionService = {
     createSubmission,
     getSubmissionsForAssignment,
     gradeSubmission,
+    getMySubmission
 };
+
 
 export default submissionService;

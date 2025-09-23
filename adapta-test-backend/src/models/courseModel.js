@@ -24,6 +24,14 @@ const courseSchema = new mongoose.Schema(
     syllabus: {
       type: String, // Guardaremos una ruta como '/uploads/syllabus-mat101.pdf'
     },
+    institution: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Institution",
+      required: true,
+    },
+    targetGrade: {
+      type: String,
+    },
   },
   {
     timestamps: true,

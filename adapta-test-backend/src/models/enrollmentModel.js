@@ -20,6 +20,11 @@ const enrollmentSchema = new mongoose.Schema(
     finalGrade: {
       type: Number,
     },
+    institution: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Institution",
+      required: true,
+    },
   },
   { timestamps: true }
 );

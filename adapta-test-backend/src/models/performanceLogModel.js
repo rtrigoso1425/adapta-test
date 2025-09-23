@@ -1,29 +1,37 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
-const performanceLogSchema = new mongoose.Schema({
+const performanceLogSchema = new mongoose.Schema(
+  {
     student: {
-        type: mongoose.Schema.Types.ObjectId,
-        required: true,
-        ref: 'User',
+      type: mongoose.Schema.Types.ObjectId,
+      required: true,
+      ref: "User",
     },
     question: {
-        type: mongoose.Schema.Types.ObjectId,
-        required: true,
-        ref: 'Question',
+      type: mongoose.Schema.Types.ObjectId,
+      required: true,
+      ref: "Question",
     },
     module: {
-        type: mongoose.Schema.Types.ObjectId,
-        required: true,
-        ref: 'Module',
+      type: mongoose.Schema.Types.ObjectId,
+      required: true,
+      ref: "Module",
     },
     isCorrect: {
-        type: Boolean,
-        required: true,
+      type: Boolean,
+      required: true,
     },
     difficulty: {
-        type: Number,
-        required: true,
+      type: Number,
+      required: true,
     },
-}, { timestamps: true });
+    institution: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Institution",
+      required: true,
+    },
+  },
+  { timestamps: true }
+);
 
-module.exports = mongoose.model('PerformanceLog', performanceLogSchema);
+module.exports = mongoose.model("PerformanceLog", performanceLogSchema);

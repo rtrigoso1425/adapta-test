@@ -1,33 +1,43 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
-const evaluationSessionSchema = new mongoose.Schema({
+const evaluationSessionSchema = new mongoose.Schema(
+  {
     student: {
-        type: mongoose.Schema.Types.ObjectId,
-        required: true,
-        ref: 'User',
+      type: mongoose.Schema.Types.ObjectId,
+      required: true,
+      ref: "User",
     },
     module: {
-        type: mongoose.Schema.Types.ObjectId,
-        required: true,
-        ref: 'Module',
+      type: mongoose.Schema.Types.ObjectId,
+      required: true,
+      ref: "Module",
     },
-    questionsAnswered: [{
+    questionsAnswered: [
+      {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'Question',
-    }],
+        ref: "Question",
+      },
+    ],
     currentMastery: {
-        type: Number,
-        default: 25, // Empezamos con una maestría base
+      type: Number,
+      default: 25, // Empezamos con una maestría base
     },
     status: {
-        type: String,
-        enum: ['in_progress', 'completed'],
-        default: 'in_progress',
+      type: String,
+      enum: ["in_progress", "completed"],
+      default: "in_progress",
     },
     score: {
-        correct: { type: Number, default: 0 },
-        incorrect: { type: Number, default: 0 },
+      correct: { type: Number, default: 0 },
+      incorrect: { type: Number, default: 0 },
     },
-}, { timestamps: true });
+    institution: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Institution",
+      required: true,
+    },
+  },
+  { timestamps: true }
+);
 
-module.exports = mongoose.model('EvaluationSession', evaluationSessionSchema);
+module.exports = mongoose.model("EvaluationSession", evaluationSessionSchema);

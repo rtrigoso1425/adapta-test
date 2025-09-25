@@ -1,5 +1,6 @@
 const jwt = require("jsonwebtoken");
 const User = require("../models/userModel");
+const Institution = require("../models/institutionModel");
 
 const protect = async (req, res, next) => {
   let token;
@@ -9,27 +10,43 @@ const protect = async (req, res, next) => {
     req.headers.authorization.startsWith("Bearer")
   ) {
     try {
-      // 1. Obtener el token del header (Bearer TOKEN)
+      // 1. Extraer el token
       token = req.headers.authorization.split(" ")[1];
 
-      // 2. Verificar el token
+      // 2. Decodificar el token para obtener los IDs
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-      // 3. Obtener los datos del usuario desde la BD (sin la contraseña)
-      // y adjuntarlos al objeto de la petición (req)
-      req.user = await User.findById(decoded.id).select("-password");
+      // 3. Buscar el usuario y popular su institución
+      req.user = await User.findById(decoded.id)
+        .select("-password")
+        .populate("institution");
 
-      next(); // Continuar a la siguiente función (el controlador)
+      // 4. Validar que el usuario y su institución existan
+      if (!req.user || !req.user.institution) {
+        res.status(401);
+        throw new Error("No autorizado, usuario o institución no encontrados");
+      }
+
+      // 5. Verificación de seguridad CLAVE: la institución en el token debe coincidir con la del usuario en la BD
+      if (req.user.institution._id.toString() !== decoded.institution) {
+        res.status(401);
+        throw new Error("Conflicto de token, la institución no coincide");
+      }
+
+      // 6. Hacemos que el objeto completo de la institución esté disponible en `req`
+      req.institution = req.user.institution;
+
+      next();
     } catch (error) {
       console.error(error);
       res.status(401);
-      throw new Error("No autorizado, token falló");
+      throw new Error("No autorizado, el token falló");
     }
   }
 
   if (!token) {
     res.status(401);
-    throw new Error("No autorizado, no hay token");
+    throw new Error("No autorizado, no se encontró un token");
   }
 };
 

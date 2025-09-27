@@ -14,7 +14,7 @@ import CurriculumViewPage from "./pages/CurriculumViewPage";
 
 function App() {
   return (
-    <>
+    <div className="bg-black text-white w-full min-h-screen space-y-28 relative max-w-screen overflow-x-hidden font-sans">
       <Header />
       <main style={{ padding: "20px" }}>
         <Routes>
@@ -32,14 +32,15 @@ function App() {
               path="/manage/section/:id"
               element={<SectionManagementPage />}
             />
-            <Route path="/learn/section/:id" element={<LearningPage />} /> {/* <-- AÑADIR RUTA */}
-            <Route path="/modules/:moduleId/evaluation" element={<EvaluationPage />} /> {/* <-- AÑADIR RUTA */}
-            <Route path="/career/:id/curriculum" element={<CurriculumViewPage />} /> {/* <-- AÑADIR RUTA */}
+            <Route path="/learn/section/:id" element={<LearningPage />} />
+            <Route path="/modules/:moduleId/evaluation" element={<EvaluationPage />} />
+            <Route path="/career/:id/curriculum" element={<CurriculumViewPage />} />
           </Route>
-          
         </Routes>
       </main>
-    </>
+      <div
+        className="absolute bottom-0 left-0 right-0 h-[400px] bg-gradient-to-t from-blue-900/50 via-blue-600/20 to-transparent rounded-t-full opacity-80 blur-3xl"></div>
+    </div>
   );
 }
 export default App;

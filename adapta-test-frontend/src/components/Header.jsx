@@ -1,6 +1,18 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { logout, reset } from '../features/auth/authSlice';
+import { HoverButton } from './ui/hover-button';
+import {
+    NavigationMenu,
+    NavigationMenuContent,
+    NavigationMenuItem,
+    NavigationMenuLink,
+    NavigationMenuList,
+    NavigationMenuTrigger,
+} from "../components/ui/navigation-menu";
+import { Menu, MoveRight, X } from "lucide-react";
+import { useState } from "react";
+import { Text_03 } from '../components/ui/wave-text';
 
 const Header = () => {
     const navigate = useNavigate();
@@ -14,34 +26,34 @@ const Header = () => {
     };
 
     return (
-        <header style={{ padding: '20px', borderBottom: '1px solid #ccc', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <header style={{ padding: '20px', borderBottom: '1px solid #2a2a2aff', display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
             <div>
-                <Link to="/" style={{ textDecoration: 'none', color: 'black', fontSize: '1.5rem' }}>AdaptaTest</Link>
+                <Link to="/" style={{ textDecoration: 'none', color: 'white', fontSize: '1.5rem' }}><Text_03 text='AdaptaTest'/></Link>
             </div>
             <nav>
                 <ul style={{ listStyle: 'none', margin: 0, display: 'flex', gap: '20px' }}>
                     {user ? (
                         // Si el usuario está logueado
                         <>
-                            <li>
+                            <HoverButton>
                                 <Link to="/dashboard">Dashboard</Link>
-                            </li>
-                            <li>
+                            </HoverButton>
+                            <HoverButton>
                                 <Link to="/courses">Cursos</Link>
-                            </li>
-                            <li>
+                            </HoverButton>
+                            <HoverButton>
                                 <button onClick={onLogout}>Logout</button>
-                            </li>
+                            </HoverButton>
                         </>
                     ) : (
                         // Si el usuario NO está logueado
                         <>
-                            <li>
+                            <HoverButton>
                                 <Link to="/login">Login</Link>
-                            </li>
-                            <li>
+                            </HoverButton>
+                            <HoverButton>
                                 <Link to="/register">Register</Link>
-                            </li>
+                            </HoverButton>
                         </>
                     )}
                 </ul>

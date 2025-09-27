@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { register, reset } from '../features/auth/authSlice';
+import { Input } from '../components/ui/input';
 
 const RegisterPage = () => {
     const [formData, setFormData] = useState({
@@ -64,7 +65,7 @@ const RegisterPage = () => {
             <section>
                 <form onSubmit={onSubmit}>
                     <div>
-                        <input
+                        <Input
                             type="text"
                             id="name"
                             name="name"
@@ -75,7 +76,7 @@ const RegisterPage = () => {
                         />
                     </div>
                     <div>
-                        <input
+                        <Input
                             type="email"
                             id="email"
                             name="email"
@@ -86,7 +87,7 @@ const RegisterPage = () => {
                         />
                     </div>
                     <div>
-                        <input
+                        <Input
                             type="password"
                             id="password"
                             name="password"
@@ -97,7 +98,7 @@ const RegisterPage = () => {
                         />
                     </div>
                     <div>
-                        <input
+                        <Input
                             type="password"
                             id="password2"
                             name="password2"

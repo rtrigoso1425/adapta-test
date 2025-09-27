@@ -30,6 +30,11 @@ const moduleSchema = new mongoose.Schema(
       type: Number,
       default: 1,
     },
+    institution: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Institution",
+      required: true,
+    },
   },
   { timestamps: true }
 );

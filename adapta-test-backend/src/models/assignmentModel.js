@@ -1,26 +1,34 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
-const assignmentSchema = new mongoose.Schema({
+const assignmentSchema = new mongoose.Schema(
+  {
     section: {
-        type: mongoose.Schema.Types.ObjectId,
-        required: true,
-        ref: 'Section',
+      type: mongoose.Schema.Types.ObjectId,
+      required: true,
+      ref: "Section",
     },
     title: {
-        type: String,
-        required: [true, 'El título de la tarea es obligatorio.'],
+      type: String,
+      required: [true, "El título de la tarea es obligatorio."],
     },
     instructions: {
-        type: String,
-        default: '',
+      type: String,
+      default: "",
     },
     dueDate: {
-        type: Date,
+      type: Date,
     },
     pointsPossible: {
-        type: Number,
-        default: 100,
+      type: Number,
+      default: 100,
     },
-}, { timestamps: true });
+    institution: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Institution",
+      required: true,
+    },
+  },
+  { timestamps: true }
+);
 
-module.exports = mongoose.model('Assignment', assignmentSchema);
+module.exports = mongoose.model("Assignment", assignmentSchema);

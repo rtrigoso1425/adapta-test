@@ -59,6 +59,11 @@ const sectionSchema = new mongoose.Schema(
         allAssignmentsRequired: { type: Boolean, default: false },
       },
     },
+    institution: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Institution",
+      required: true,
+    },
   },
   { timestamps: true }
 );

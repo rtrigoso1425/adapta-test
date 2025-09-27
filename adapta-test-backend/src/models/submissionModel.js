@@ -1,36 +1,45 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
-const submissionSchema = new mongoose.Schema({
+const submissionSchema = new mongoose.Schema(
+  {
     assignment: {
-        type: mongoose.Schema.Types.ObjectId,
-        required: true,
-        ref: 'Assignment',
+      type: mongoose.Schema.Types.ObjectId,
+      required: true,
+      ref: "Assignment",
     },
     student: {
-        type: mongoose.Schema.Types.ObjectId,
-        required: true,
-        ref: 'User',
+      type: mongoose.Schema.Types.ObjectId,
+      required: true,
+      ref: "User",
     },
     // El contenido puede ser texto o un enlace a un archivo
     content: {
-        type: String,
+      type: String,
     },
     fileUrl: {
-        type: String,
+      type: String,
     },
     grade: {
-        type: Number,
+      type: Number,
     },
-    feedback: { // Comentarios del profesor
-        type: String,
+    feedback: {
+      // Comentarios del profesor
+      type: String,
     },
     submittedAt: {
-        type: Date,
-        default: Date.now,
+      type: Date,
+      default: Date.now,
     },
-}, { timestamps: true });
+    institution: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Institution",
+      required: true,
+    },
+  },
+  { timestamps: true }
+);
 
 // Un estudiante solo puede hacer una entrega por tarea
 submissionSchema.index({ assignment: 1, student: 1 }, { unique: true });
 
-module.exports = mongoose.model('Submission', submissionSchema);
+module.exports = mongoose.model("Submission", submissionSchema);

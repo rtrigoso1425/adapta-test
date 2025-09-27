@@ -32,21 +32,30 @@ const AssignCoordinatorModal = ({ career, onClose }) => {
   const dispatch = useDispatch();
   const { coordinators, isLoading } = useSelector((state) => state.users);
   const [selectedCoordinator, setSelectedCoordinator] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    dispatch(getCoordinators());
-    return () => {
-      dispatch(resetUsers());
-    };
-  }, [dispatch]);
+    // Solo cargar coordinadores si no están ya cargados
+    if (!coordinators.length) {
+      dispatch(getCoordinators());
+    }
+  }, [dispatch, coordinators.length]);
 
-  const onSubmit = (e) => {
+  const onSubmit = async (e) => {
     e.preventDefault();
-    if (selectedCoordinator) {
-      dispatch(
-        assignCoordinator({ careerId: career._id, userId: selectedCoordinator })
-      );
-      onClose();
+    if (selectedCoordinator && !isSubmitting) {
+      setIsSubmitting(true);
+      try {
+        await dispatch(
+          assignCoordinator({ careerId: career._id, userId: selectedCoordinator })
+        ).unwrap();
+        // Solo cerrar el modal si la asignación fue exitosa
+        onClose();
+      } catch (error) {
+        console.error('Error al asignar coordinador:', error);
+      } finally {
+        setIsSubmitting(false);
+      }
     }
   };
 

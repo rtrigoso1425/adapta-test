@@ -2,6 +2,13 @@ import { useState, useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { login, reset } from "../features/auth/authSlice";
+import { HoverButton } from "../components/ui/hover-button";
+import { Input } from "../components/ui/input";
+import { Mail, Lock } from "lucide-react";
+import { Label } from "../components/ui/label";
+import { Button } from "../components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
+import { color } from "framer-motion";
 
 const LoginPage = () => {
   const [formData, setFormData] = useState({
@@ -48,35 +55,66 @@ const LoginPage = () => {
   }
 
   return (
-    <div>
-      <h1>Iniciar Sesión</h1>
-      <section>
-        <form onSubmit={onSubmit}>
-          <div>
-            <input
-              type="email"
-              name="email"
-              value={email}
-              placeholder="Ingresa tu email"
-              onChange={onChange}
-              required
-            />
-          </div>
-          <div>
-            <input
-              type="password"
-              name="password"
-              value={password}
-              placeholder="Ingresa tu contraseña"
-              onChange={onChange}
-              required
-            />
-          </div>
-          <div>
-            <button type="submit">Entrar</button>
-          </div>
-        </form>
-      </section>
+    <div style={{ 
+      minHeight: '100vh',
+      display: 'flex', 
+      alignItems: 'center', 
+      justifyContent: 'center',
+      padding: '20px 0',
+      marginTop: '-7rem',
+      paddingTop: '7rem'
+    }}>
+      <Card className="w-full max-w-md shadow-lg rounded-2xl border border-gray-200 bg-gray-50">
+        <CardHeader>
+          <CardTitle className="text-2xl font-semibold text-center text-gray-800">
+            Inicio de Sesion
+          </CardTitle>
+          <p className="text-center text-sm text-gray-500 mt-1">
+            Inicia sesión para acceder a tu cuenta y explorar nuestras funciones.
+          </p>
+        </CardHeader>
+        <CardContent style={{ pointerEvents: 'auto', position: 'relative' }}>
+          <form onSubmit={onSubmit} className="space-y-5">
+            <div>
+              <Label style={{color:"#000000"}}>Correo</Label>
+              <div className="flex items-center gap-2 border rounded-lg px-3 py-2 bg-white">
+                <Mail className="w-4 h-4 text-gray-500" />
+                <Input
+                  id="email"
+                  type="email"
+                  name="email"
+                  placeholder="Ingresa tu email"
+                  value={email}
+                  onChange={onChange}
+                  required
+                  className="w-full border-0 focus-visible:ring-0 focus-visible:outline-none shadow-none text-black"/>
+              </div>
+            </div>
+
+            <div>
+              <Label style={{color:"#000000"}}>Contraseña</Label>
+              <div className="flex items-center gap-2 border rounded-lg px-3 py-2 bg-white">
+                <Lock className="w-4 h-4 text-gray-500" />
+                <Input
+                  id="password"
+                  type="password"
+                  name="password"
+                  placeholder="Ingresa tu contraseña"
+                  value={password}
+                  onChange={onChange}
+                  required
+                  className="w-full border-0 focus-visible:ring-0 focus-visible:outline-none shadow-none text-black"/>
+              </div>
+            </div>
+
+            <Button
+              type="submit"
+              className="w-full rounded-xl hover:cursor-pointer text-white bg-black font-medium shadow-md">
+              Loguearse
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
     </div>
   );
 };

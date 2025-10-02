@@ -219,4 +219,5 @@ module.exports = {
   addCourseToCurriculum,
   getMyCareer,
   getCareerById,
+  isUniversity,
 };

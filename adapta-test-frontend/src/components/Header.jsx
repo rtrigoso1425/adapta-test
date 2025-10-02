@@ -2,16 +2,6 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { logout, reset } from '../features/auth/authSlice';
 import { HoverButton } from './ui/hover-button';
-import {
-    NavigationMenu,
-    NavigationMenuContent,
-    NavigationMenuItem,
-    NavigationMenuLink,
-    NavigationMenuList,
-    NavigationMenuTrigger,
-} from "../components/ui/navigation-menu";
-import { Menu, MoveRight, X } from "lucide-react";
-import { useState } from "react";
 import { Text_03 } from '../components/ui/wave-text';
 
 const Header = () => {
@@ -50,9 +40,6 @@ const Header = () => {
                         <>
                             <HoverButton>
                                 <Link to="/login">Login</Link>
-                            </HoverButton>
-                            <HoverButton>
-                                <Link to="/register">Register</Link>
                             </HoverButton>
                         </>
                     )}

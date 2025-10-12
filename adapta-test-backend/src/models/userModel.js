@@ -1,4 +1,3 @@
-
 const mongoose = require("mongoose");
 const bcrypt = require("bcryptjs");
 
@@ -18,16 +17,25 @@ const userSchema = mongoose.Schema(
       required: [true, "Por favor, añade una contraseña."],
     },
     // CAMPO AÑADIDO: Referencia a la institución a la que pertenece el usuario
+    role: {
+      type: String,
+      enum: [
+        "student",
+        "professor",
+        "coordinator",
+        "admin",
+        "parent",
+        "superadmin",
+      ], // <-- AÑADIR 'superadmin'
+      required: true,
+    },
     institution: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Institution",
-      required: true,
-    },
-    // CAMBIO: 'role' ahora es el rol específico dentro de la institución
-    role: {
-      type: String,
-      enum: ["student", "professor", "coordinator", "admin", "parent"],
-      required: true,
+      // Ahora es requerido solo si el rol NO es superadmin
+      required: function () {
+        return this.role !== "superadmin";
+      },
     },
     // CAMPO AÑADIDO: Para estudiantes de colegio
     studentGrade: {

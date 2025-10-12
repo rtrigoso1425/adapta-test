@@ -1,12 +1,42 @@
 import { BlurFade } from "../components/ui/blur-fade";
 import { HyperText } from "../components/ui/hyper-text";
 import React, { useState, useEffect } from 'react';
-import { Sun, Moon } from 'lucide-react';
+import { Sun, Moon, AlignCenter } from 'lucide-react';
 import ModernTeamShowcase from "../components/cybernetic-team-showcase";
 import { HoverButton } from "../components/ui/hover-button";
+import { LogoCarousel } from "../components/ui/logo-carousel";
+import VideoPlayer from "../components/ui/video-player";
+
+const logos = [
+  { 
+    id: 'utp-1', 
+    img: () => <img src="https://i.postimg.cc/28Gn6t3s/Bolt.png" alt="UTP" className="w-full h-full object-contain" /> 
+  },
+  { 
+    id: 'utp-2', 
+    img: () => <img src="https://i.postimg.cc/FHncbJyG/supabase.png" alt="UTP" className="w-full h-full object-contain" /> 
+  },
+  { 
+    id: 'utp-3', 
+    img: () => <img src="https://i.postimg.cc/SQW60R4N/Pica.png" alt="UTP" className="w-full h-full object-contain" /> 
+  },
+  { 
+    id: 'utp-4', 
+    img: () => <img src="https://i.postimg.cc/L62zmS4k/netlify.png" alt="UTP" className="w-full h-full object-contain" /> 
+  },
+  { 
+    id: 'utp-5', 
+    img: () => <img src="https://i.postimg.cc/0yNDJCwb/Eleven-Labs.png" className="w-full h-full object-contain" /> 
+  },
+  { 
+    id: 'utp-6', 
+    img: () => <img src="https://i.postimg.cc/VvBnXGgb/21.png" className="w-full h-full object-contain" /> 
+  },
+];
+
 const teamData = [
-    { name: 'Aldair Doloriert', title: 'Lead Architect', avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?q=80&w=400&auto=format&fit=crop', socials: { github: '#', linkedin: '#', twitter: '#' } },
-    { name: 'Rodrigo Trigoso', title: 'Quantum Engineer', avatar: 'https://images.unsplash.com/photo-1557862921-37829c790f19?q=80&w=400&auto=format&fit=crop', socials: { github: '#', linkedin: '#', twitter: '#' } }
+    { name: 'Aldair Doloriert', title: 'Backend', avatar: 'https://i.ibb.co/w2wbpg6/2.jpg', socials: { github: 'https://github.com/ezzADJG', linkedin: '#', twitter: '#', instagram: "https://www.instagram.com/aldair.d14" } },
+    { name: 'Rodrigo Trigoso', title: 'Frontend', avatar: 'https://i.ibb.co/fzxDpnZ8/1.png', socials: { github: 'https://github.com/rtrigoso1425', linkedin: '#', twitter: '#', instagram: "https://www.instagram.com/rtrigoso1425" } }
   ];
 const HomePage = () => {
   return (
@@ -15,32 +45,25 @@ const HomePage = () => {
         {/* Main Content */}
         <div className="flex flex-col items-center text-center px-10 z-10 pt-16 pb-10">
           <BlurFade delay={0.5} inView>
-            <h1 className="text-7xl font-bold leading-tight font-light">
-              Adapta-Test.
-            </h1>
+            <div style={{display: "flex", justifyContent: "center", alignItems: "center", paddingTop: "30px"}}>
+              <img src="https://i.ibb.co/C3m7Fzr2/logo.png" alt="" className="w-1/3 object-cover transition-transform duration-500 group-hover:scale-110"/>
+            </div>
           </BlurFade>
           <HyperText
             className="text-1xl font-bold text-white"
             text="Adaptando la forma de aprender"
           />
-          <div className="flex flex-col items-start text-center px-10 z-10 pt-10">
-            <h2>Nuestros Socios</h2>
-          </div>
-          {/* Infinite Moving Fading Carousel */}
-          <div
-            className="w-full max-w-xl mx-auto overflow-hidden relative h-10 mb-20 z-10">
-            <div className="flex animate-marquee whitespace-nowrap text-gray-400 text-xl">
-              <span className="mx-6">Utp</span>
-              <span className="mx-6">Utp</span>
-              <span className="mx-6">Utp</span>
+          <div className="flex flex-col items-center text-center px-10 z-10 pt-10">
+            <h2 className="mb-8">Nuestros Socios</h2>
+            <div className="w-full max-w-xl mx-auto">
+              <LogoCarousel 
+                logos={logos} 
+                columnCount={4}
+              />
             </div>
-            {/* Fading gradients */}
-            <div
-              className="pointer-events-none absolute inset-y-0 left-0 w-20 bg-gradient-to-r from-purple-900/10 to-transparent"></div>
-            <div
-              className="pointer-events-none absolute inset-y-0 right-0 w-20 bg-gradient-to-l from-purple-900/10 to-transparent"></div>
           </div>
           <ModernTeamShowcase teamMembers={teamData} />
+          <VideoPlayer src="/el-real-video-xd_s6lXFqi9.mp4"></VideoPlayer>
         </div>
         {/* Gradient Glow */}
         <div

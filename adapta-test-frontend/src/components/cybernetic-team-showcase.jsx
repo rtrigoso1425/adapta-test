@@ -1,7 +1,7 @@
 "use client";
 import React, { useCallback } from 'react';
 import { motion, useMotionValue, useTransform, useSpring } from 'framer-motion';
-import { Github, Linkedin, Twitter } from 'lucide-react';
+import { Github, Linkedin, Twitter, Instagram } from 'lucide-react';
 
 // A utility function for class names
 const cn = (...classes) => classes.filter(Boolean).join(' ');
@@ -11,6 +11,7 @@ const iconMap = {
     github: Github,
     linkedin: Linkedin,
     twitter: Twitter,
+    instagram: Instagram,
 };
 
 const cardVariants = {
@@ -63,7 +64,7 @@ const TeamMemberCard = React.memo(({
                 style={{ transform: "translateZ(50px)", transformStyle: "preserve-3d" }}
                 className="absolute inset-3 flex flex-col items-center text-center bg-gray-800/10 backdrop-blur-md p-4 rounded-lg border border-gray-700">
                 <div
-                    className="relative w-24 h-24 rounded-full overflow-hidden border-2 border-slate-600 mb-3">
+                    className="relative w-36 h-36 rounded-full overflow-hidden border-2 border-slate-600 mb-3">
                     <img
                         src={member.avatar}
                         alt={`Portrait of ${member.name}`}

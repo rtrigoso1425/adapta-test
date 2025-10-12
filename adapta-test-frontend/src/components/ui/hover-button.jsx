@@ -103,7 +103,10 @@ const HoverButton = React.forwardRef(({ className, children, ...props }, ref) =>
             background: color,
           }} />
       ))}
-      {children}
+      {/* CAMBIO AQUÍ: Agregado pointer-events-none al contenedor del children */}
+      <span className="relative z-[2] pointer-events-none">
+        {children}
+      </span>
     </button>
   );
 })

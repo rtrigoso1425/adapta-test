@@ -1,3 +1,4 @@
+// src/controllers/submissionController.js
 const Submission = require("../models/submissionModel");
 const Assignment = require("../models/assignmentModel");
 const Enrollment = require("../models/enrollmentModel");
@@ -10,40 +11,51 @@ const createSubmission = async (req, res) => {
   const { content, fileUrl } = req.body;
   const studentId = req.user._id;
 
-  // Validación 1: ¿El estudiante está matriculado en la sección de esta tarea?
-  const assignment = await Assignment.findById(assignmentId);
+  // 1. Validación: ¿La tarea existe DENTRO de la institución del estudiante?
+  const assignment = await Assignment.findOne({
+    _id: assignmentId,
+    institution: req.institution._id,
+  });
   if (!assignment) {
-    res.status(404);
-    throw new Error("Tarea no encontrada.");
+    return res
+      .status(404)
+      .json({ message: "Tarea no encontrada en esta institución." });
   }
+
+  // 2. Validación: ¿El estudiante está matriculado en la sección de esta tarea?
   const isEnrolled = await Enrollment.findOne({
     student: studentId,
     section: assignment.section,
     status: "enrolled",
+    institution: req.institution._id, // Añadimos filtro de institución por seguridad
   });
-
   if (!isEnrolled) {
-    res.status(403); // Prohibido
-    throw new Error(
-      "No estás matriculado en el curso correspondiente para entregar esta tarea."
-    );
+    return res
+      .status(403)
+      .json({
+        message:
+          "No estás matriculado en el curso correspondiente para entregar esta tarea.",
+      });
   }
 
-  // Validación 2: ¿Ya ha entregado esta tarea?
+  // 3. Validación: ¿Ya ha entregado esta tarea?
   const existingSubmission = await Submission.findOne({
     assignment: assignmentId,
     student: studentId,
   });
   if (existingSubmission) {
-    res.status(400); // Bad Request
-    throw new Error("Ya has realizado la entrega para esta tarea.");
+    return res
+      .status(400)
+      .json({ message: "Ya has realizado la entrega para esta tarea." });
   }
 
+  // 4. Crear la entrega, asignando la institución
   const submission = await Submission.create({
     assignment: assignmentId,
     student: studentId,
     content,
     fileUrl,
+    institution: req.institution._id, // Asignar institución
   });
 
   res.status(201).json(submission);
@@ -54,24 +66,34 @@ const createSubmission = async (req, res) => {
 // @access  Private/Professor
 const getSubmissionsForAssignment = async (req, res) => {
   const { assignmentId } = req.params;
-  const assignment = await Assignment.findById(assignmentId).populate(
-    "section"
-  );
+
+  // 1. Validar que la tarea exista en la institución del profesor
+  const assignment = await Assignment.findOne({
+    _id: assignmentId,
+    institution: req.institution._id,
+  }).populate("section");
 
   if (!assignment) {
-    res.status(404);
-    throw new Error("Tarea no encontrada.");
+    return res
+      .status(404)
+      .json({ message: "Tarea no encontrada en esta institución." });
   }
 
-  // Validación: ¿El profesor que hace la petición es el instructor de la sección?
+  // 2. Validar que el profesor sea el instructor de la sección de la tarea
   if (assignment.section.instructor.toString() !== req.user._id.toString()) {
-    res.status(403);
-    throw new Error("No estás autorizado para ver las entregas de esta tarea.");
+    return res
+      .status(403)
+      .json({
+        message: "No estás autorizado para ver las entregas de esta tarea.",
+      });
   }
 
+  // 3. Obtener las entregas, filtrando por institución
   const submissions = await Submission.find({
     assignment: assignmentId,
+    institution: req.institution._id,
   }).populate("student", "name email");
+
   res.json(submissions);
 };
 
@@ -82,23 +104,26 @@ const gradeSubmission = async (req, res) => {
   const { submissionId } = req.params;
   const { grade, feedback } = req.body;
 
-  const submission = await Submission.findById(submissionId).populate({
-    path: "assignment",
-    populate: { path: "section" },
-  });
+  // 1. Buscar la entrega DENTRO de la institución del profesor
+  const submission = await Submission.findOne({
+    _id: submissionId,
+    institution: req.institution._id,
+  }).populate({ path: "assignment", populate: { path: "section" } });
 
   if (!submission) {
-    res.status(404);
-    throw new Error("Entrega no encontrada.");
+    return res
+      .status(404)
+      .json({ message: "Entrega no encontrada en esta institución." });
   }
 
-  // Validación: ¿El profesor es el instructor de la sección correspondiente?
+  // 2. Validar que el profesor sea el instructor de la sección correspondiente
   if (
     submission.assignment.section.instructor.toString() !==
     req.user._id.toString()
   ) {
-    res.status(403);
-    throw new Error("No estás autorizado para calificar esta entrega.");
+    return res
+      .status(403)
+      .json({ message: "No estás autorizado para calificar esta entrega." });
   }
 
   submission.grade = grade;
@@ -118,11 +143,11 @@ const getMySubmissionForAssignment = async (req, res) => {
   const submission = await Submission.findOne({
     assignment: assignmentId,
     student: studentId,
+    institution: req.institution._id, // Filtrar por institución
   });
 
   if (!submission) {
-    // No es un error, simplemente significa que no ha entregado la tarea.
-    // Enviamos null para que el frontend sepa que debe mostrar el formulario.
+    // No es un error, simplemente no ha entregado. El frontend manejará el `null`.
     return res.json(null);
   }
 
@@ -133,5 +158,5 @@ module.exports = {
   createSubmission,
   getSubmissionsForAssignment,
   gradeSubmission,
-  getMySubmissionForAssignment
+  getMySubmissionForAssignment,
 };

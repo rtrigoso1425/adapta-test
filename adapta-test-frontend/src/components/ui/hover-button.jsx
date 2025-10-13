@@ -1,8 +1,14 @@
 import * as React from "react"
 import { cn } from "../../lib/utils"
 
-const HoverButton = React.forwardRef(({ className, children, ...props }, ref) => {
-  const buttonRef = React.useRef(null)
+const HoverButton = React.forwardRef(({ 
+  className, 
+  children, 
+  as: Component = 'button',
+  ...props 
+}, ref) => {
+  const internalRef = React.useRef(null)
+  const buttonRef = ref || internalRef
   const [isListening, setIsListening] = React.useState(false)
   const [circles, setCircles] = React.useState([])
   const lastAddedRef = React.useRef(0)
@@ -18,7 +24,7 @@ const HoverButton = React.forwardRef(({ className, children, ...props }, ref) =>
       ...prev,
       { id: Date.now(), x, y, color, fadeState: null },
     ])
-  }, [])
+  }, [buttonRef])
 
   const handlePointerMove = React.useCallback((event) => {
     if (!isListening) return
@@ -64,7 +70,7 @@ const HoverButton = React.forwardRef(({ className, children, ...props }, ref) =>
   }, [circles])
 
   return (
-    <button
+    <Component
       ref={buttonRef}
       className={cn(
         "relative isolate px-8 py-3 rounded-3xl",
@@ -103,11 +109,10 @@ const HoverButton = React.forwardRef(({ className, children, ...props }, ref) =>
             background: color,
           }} />
       ))}
-      {/* CAMBIO AQUÍ: Agregado pointer-events-none al contenedor del children */}
-      <span className="relative z-[2] pointer-events-none">
+      <span className="relative z-[2]">
         {children}
       </span>
-    </button>
+    </Component>
   );
 })
 

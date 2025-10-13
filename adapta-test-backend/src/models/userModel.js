@@ -10,7 +10,6 @@ const userSchema = mongoose.Schema(
     email: {
       type: String,
       required: [true, "Por favor, añade un email."],
-      unique: true, // AÑADIDO: Email único globalmente
       match: [/.+\@.+\..+/, "Por favor, introduce un email válido."],
     },
     password: {
@@ -38,9 +37,11 @@ const userSchema = mongoose.Schema(
         return this.role !== "superadmin";
       },
     },
+    // CAMPO AÑADIDO: Para estudiantes de colegio
     studentGrade: {
-      type: String,
+      type: String, // "1ro", "2do", "3ro", "4to", "5to"
     },
+    // CAMPO AÑADIDO: Para padres, los IDs de los estudiantes que supervisa
     parentOf: [
       {
         type: mongoose.Schema.Types.ObjectId,
@@ -53,10 +54,10 @@ const userSchema = mongoose.Schema(
   }
 );
 
-// COMENTADO: Índice único por institución ya no es necesario
-// userSchema.index({ institution: 1, email: 1 }, { unique: true });
+// ÍNDICE AÑADIDO: Asegura que un email sea único por institución
+userSchema.index({ institution: 1, email: 1 }, { unique: true });
 
-// Middleware para encriptar la contraseña
+// Middleware para encriptar la contraseña (se mantiene igual)
 userSchema.pre("save", async function (next) {
   if (!this.isModified("password")) {
     next();
@@ -65,7 +66,7 @@ userSchema.pre("save", async function (next) {
   this.password = await bcrypt.hash(this.password, salt);
 });
 
-// Método para comparar contraseñas
+// Método para comparar contraseñas (se mantiene igual)
 userSchema.methods.matchPassword = async function (enteredPassword) {
   return await bcrypt.compare(enteredPassword, this.password);
 };

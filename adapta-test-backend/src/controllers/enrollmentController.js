@@ -1,76 +1,46 @@
+// src/controllers/enrollmentController.js
 const Enrollment = require("../models/enrollmentModel");
 const Section = require("../models/sectionModel");
 const Course = require("../models/courseModel");
+const InstitutionRulesService = require('../services/institutionRulesService');
 
-// @desc    Estudiante se matricula automáticamente en una sección
+// @desc    Estudiante se matricula en una sección
 // @route   POST /api/enrollments/enroll
 // @access  Private/Student
 const enrollStudent = async (req, res) => {
   const { sectionId } = req.body;
   const studentId = req.user._id;
 
-  // --- 1. Obtener datos necesarios ---
-  const section = await Section.findById(sectionId).populate("course");
+  // --- 1. Validar que la sección exista en la institución ---
+  const section = await Section.findOne({ _id: sectionId, institution: req.institution._id }).populate("course");
   if (!section) {
-    res.status(404);
-    throw new Error("Sección no encontrada.");
+    return res.status(404).json({ message: "Sección no encontrada en esta institución." });
   }
-  const course = section.course;
 
   // --- 2. Ejecutar Validaciones ---
-
-  // Validación A: ¿Ya está matriculado?
-  const existingEnrollment = await Enrollment.findOne({
-    student: studentId,
-    section: sectionId,
-  });
+  // A: ¿Ya está matriculado?
+  const existingEnrollment = await Enrollment.findOne({ student: studentId, section: sectionId });
   if (existingEnrollment) {
-    res.status(400);
-    throw new Error("Ya te encuentras matriculado en esta sección.");
+    return res.status(400).json({ message: "Ya te encuentras matriculado en esta sección." });
   }
 
-  // Validación B: ¿Hay capacidad disponible?
+  // B: ¿Hay capacidad disponible?
   const enrolledCount = await Enrollment.countDocuments({ section: sectionId });
   if (enrolledCount >= section.capacity) {
-    res.status(400);
-    throw new Error(
-      "La sección ha alcanzado su capacidad máxima. No hay vacantes."
-    );
+    return res.status(400).json({ message: "La sección ha alcanzado su capacidad máxima." });
   }
 
-  // Validación C: ¿Cumple con los prerrequisitos?
-  if (course.prerequisites && course.prerequisites.length > 0) {
-    // Obtener las matrículas aprobadas del estudiante
-    const studentEnrollments = await Enrollment.find({
-      student: studentId,
-      status: "enrolled",
-    }).populate({
-      path: "section",
-      select: "course",
-    });
-
-    // Extraer los IDs de los cursos que el estudiante está llevando (o ha completado)
-    const studentCoursesIds = studentEnrollments.map((e) =>
-      e.section.course.toString()
-    );
-
-    for (const prereqId of course.prerequisites) {
-      if (!studentCoursesIds.includes(prereqId.toString())) {
-        const prereqCourse = await Course.findById(prereqId);
-        res.status(400);
-        throw new Error(
-          `No cumples con los prerrequisitos. Debes haber aprobado el curso: "${prereqCourse.title}".`
-        );
-      }
-    }
+  // C: ¿Cumple con los requisitos de la institución (prerrequisitos, grado, etc.)?
+  const canEnroll = await InstitutionRulesService.canEnrollInCourse(req.user, section.course, req.institution);
+  if (!canEnroll) {
+    return res.status(403).json({ message: "No cumples los requisitos para matricularte en este curso." });
   }
 
   // --- 3. Crear Matrícula ---
-  // Si todas las validaciones pasan, se crea la matrícula directamente como 'enrolled'.
   const enrollment = await Enrollment.create({
     student: studentId,
     section: sectionId,
-    // status por defecto será 'enrolled'
+    institution: req.institution._id, // Asignar institución
   });
 
   res.status(201).json({ message: "¡Matrícula exitosa!", enrollment });
@@ -80,15 +50,16 @@ const enrollStudent = async (req, res) => {
 // @route   GET /api/enrollments/my-enrollments
 // @access  Private/Student
 const getMyEnrollments = async (req, res) => {
-  const enrollments = await Enrollment.find({ student: req.user._id }).populate(
-    {
-      path: "section",
-      populate: [
-        { path: "course", select: "title" },
-        { path: "instructor", select: "name" },
-      ],
-    }
-  );
+  const enrollments = await Enrollment.find({
+    student: req.user._id,
+    institution: req.institution._id // Filtrar por institución
+  }).populate({
+    path: "section",
+    populate: [
+      { path: "course", select: "title" },
+      { path: "instructor", select: "name" },
+    ],
+  });
   res.json(enrollments);
 };
 
@@ -96,22 +67,23 @@ const getMyEnrollments = async (req, res) => {
 // @route   GET /api/enrollments/my-history
 // @access  Private/Student
 const getMyEnrollmentHistory = async (req, res) => {
-  // 1. Obtener todas las matrículas del estudiante, populando toda la info necesaria
-  const allEnrollments = await Enrollment.find({ student: req.user._id })
-    .populate({
-      path: "section",
-      populate: [
-        { path: "course", select: "title" },
-        { path: "instructor", select: "name" },
-        { path: "academicCycle", select: "name isActive" }, // ¡Importante poblar el ciclo aquí!
-      ],
-    })
-    .sort({ "section.academicCycle.startDate": -1 }); // Ordenar por fecha de inicio del ciclo
+  const allEnrollments = await Enrollment.find({
+    student: req.user._id,
+    institution: req.institution._id // Filtrar por institución
+  })
+  .populate({
+    path: "section",
+    populate: [
+      { path: "course", select: "title" },
+      { path: "instructor", select: "name" },
+      { path: "academicCycle", select: "name isActive" },
+    ],
+  })
+  .sort({ "section.academicCycle.startDate": -1 });
 
-  // 2. Agrupar las matrículas por ciclo académico
   const groupedByCycle = allEnrollments.reduce((acc, enrollment) => {
     const cycle = enrollment.section.academicCycle;
-    if (!cycle) return acc; // Omitir si no hay ciclo
+    if (!cycle) return acc;
 
     const cycleId = cycle._id.toString();
     if (!acc[cycleId]) {
@@ -126,9 +98,7 @@ const getMyEnrollmentHistory = async (req, res) => {
     return acc;
   }, {});
 
-  // 3. Convertir el objeto en un array para enviarlo
   const history = Object.values(groupedByCycle);
-
   res.json(history);
 };
 
@@ -136,77 +106,59 @@ const getMyEnrollmentHistory = async (req, res) => {
 // @route   POST /api/enrollments/enroll-batch
 // @access  Private/Student
 const enrollInBatch = async (req, res) => {
-  const { sectionIds } = req.body; // Recibimos un array de IDs de sección
+  const { sectionIds } = req.body;
   const studentId = req.user._id;
 
   if (!sectionIds || sectionIds.length === 0) {
-    res.status(400);
-    throw new Error("No se han proporcionado secciones para la matrícula.");
+    return res.status(400).json({ message: "No se han proporcionado secciones para la matrícula." });
   }
 
+  // Obtener todas las secciones de una vez para optimizar
+  const sections = await Section.find({
+    _id: { $in: sectionIds },
+    institution: req.institution._id
+  }).populate("course");
+
   // --- FASE DE VALIDACIÓN PREVIA ---
-  const validationResults = [];
+  const validationErrors = [];
   for (const sectionId of sectionIds) {
-    const section = await Section.findById(sectionId).populate("course");
+    const section = sections.find(s => s._id.toString() === sectionId);
     if (!section) {
-      validationResults.push(
-        `La sección con ID ${sectionId} no fue encontrada.`
-      );
+      validationErrors.push(`La sección con ID ${sectionId} no fue encontrada en esta institución.`);
       continue;
     }
 
     // Validación A: Capacidad
-    const enrolledCount = await Enrollment.countDocuments({
-      section: sectionId,
-    });
+    const enrolledCount = await Enrollment.countDocuments({ section: sectionId });
     if (enrolledCount >= section.capacity) {
-      validationResults.push(
-        `El curso "${section.course.title}" no tiene vacantes.`
-      );
-      continue;
+      validationErrors.push(`El curso "${section.course.title}" no tiene vacantes.`);
     }
 
-    // Validación B: Prerrequisitos (la misma lógica que ya teníamos)
-    const course = section.course;
-    if (course.prerequisites && course.prerequisites.length > 0) {
-      const studentEnrollments = await Enrollment.find({
-        student: studentId,
-        status: { $in: ["enrolled", "passed"] },
-      }).populate({ path: "section", select: "course" });
-      const studentCoursesIds = studentEnrollments.map((e) =>
-        e.section.course.toString()
-      );
-      for (const prereqId of course.prerequisites) {
-        if (!studentCoursesIds.includes(prereqId.toString())) {
-          validationResults.push(
-            `No cumples los prerrequisitos para el curso "${course.title}".`
-          );
-          break; // No es necesario seguir revisando prerrequisitos para este curso
-        }
-      }
+    // Validación B: Prerrequisitos y reglas institucionales
+    const canEnroll = await InstitutionRulesService.canEnrollInCourse(req.user, section.course, req.institution);
+    if (!canEnroll) {
+      validationErrors.push(`No cumples los prerrequisitos para el curso "${section.course.title}".`);
     }
   }
 
-  // Si hubo algún error de validación, detenemos todo el proceso.
-  if (validationResults.length > 0) {
-    res.status(400);
-    throw new Error(
-      `No se pudo completar la matrícula debido a los siguientes errores: \n- ${validationResults.join(
-        "\n- "
-      )}`
-    );
+  if (validationErrors.length > 0) {
+    return res.status(400).json({
+      message: `No se pudo completar la matrícula debido a los siguientes errores: \n- ${validationErrors.join("\n- ")}`
+    });
   }
 
   // --- FASE DE CREACIÓN ---
-  const enrollmentPromises = sectionIds.map((sectionId) => {
-    return Enrollment.create({ student: studentId, section: sectionId });
+  const enrollmentPromises = sectionIds.map(sectionId => {
+    return Enrollment.create({
+      student: studentId,
+      section: sectionId,
+      institution: req.institution._id // Asignar institución
+    });
   });
 
   const enrollments = await Promise.all(enrollmentPromises);
 
-  res
-    .status(201)
-    .json({ message: "¡Matrícula completada exitosamente!", enrollments });
+  res.status(201).json({ message: "¡Matrícula completada exitosamente!", enrollments });
 };
 
 module.exports = {

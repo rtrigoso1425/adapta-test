@@ -1,16 +1,21 @@
+// src/controllers/academicProgressController.js
 const AcademicRecord = require("../models/academicRecordModel");
 const Enrollment = require("../models/enrollmentModel");
-const AcademicCycle = require("../models/academicCycleModel"); // <-- 1. Importar
-const Section = require("../models/sectionModel"); // <-- 1. Importar
+const AcademicCycle = require("../models/academicCycleModel");
+const Section = require("../models/sectionModel");
 
 // @desc    Obtener el progreso académico completo del estudiante logueado
 // @route   GET /api/progress/my-progress
 // @access  Private/Student
 const getMyAcademicProgress = async (req, res) => {
   const studentId = req.user._id;
+  const institutionId = req.institution._id;
 
-  // 1. Encontrar el expediente del estudiante y poblar la malla curricular completa
-  const record = await AcademicRecord.findOne({ student: studentId }).populate({
+  // 1. Buscar expediente del estudiante EN SU INSTITUCIÓN
+  const record = await AcademicRecord.findOne({
+    student: studentId,
+    institution: institutionId,
+  }).populate({
     path: "career",
     populate: {
       path: "curriculum.courses",
@@ -19,41 +24,45 @@ const getMyAcademicProgress = async (req, res) => {
   });
 
   if (!record) {
-    // Si no tiene expediente, significa que aún no se ha inscrito en una carrera
     return res.json({ needsCareerEnrollment: true });
   }
 
-  // 2. Obtener todos los cursos que el estudiante ha APROBADO
+  // 2. Obtener cursos aprobados del estudiante EN SU INSTITUCIÓN
   const passedEnrollments = await Enrollment.find({
     student: studentId,
     status: "passed",
+    institution: institutionId,
   }).populate({ path: "section", select: "course" });
   const passedCourseIds = passedEnrollments.map((e) =>
     e.section.course.toString()
   );
 
+  // 3. Obtener matrículas actuales del estudiante EN SU INSTITUCIÓN
   let currentEnrollments = [];
-  const activeCycle = await AcademicCycle.findOne({ isActive: true });
+  const activeCycle = await AcademicCycle.findOne({
+    isActive: true,
+    institution: institutionId,
+  });
 
   if (activeCycle) {
-    // Encontrar todas las secciones que pertenecen al ciclo activo
     const sectionsInActiveCycle = await Section.find({
       academicCycle: activeCycle._id,
+      institution: institutionId,
     });
     const sectionIds = sectionsInActiveCycle.map((s) => s._id);
 
-    // Buscar las matrículas del estudiante que estén en esas secciones
     currentEnrollments = await Enrollment.find({
       student: studentId,
       section: { $in: sectionIds },
-      status: "enrolled", // Solo las que están en curso
+      status: "enrolled",
+      institution: institutionId,
     }).populate({
       path: "section",
       populate: { path: "course", select: "title description" },
     });
   }
 
-  // 3. Calcular el ciclo relativo del estudiante
+  // 4. Calcular el ciclo relativo y los cursos elegibles (la lógica interna no cambia)
   let currentCycle = 0;
   if (record.career.curriculum) {
     record.career.curriculum.forEach((cycle) => {
@@ -65,26 +74,19 @@ const getMyAcademicProgress = async (req, res) => {
       }
     });
   }
-  // El estudiante puede llevar cursos de su ciclo actual + 1 (adelantar)
   const accessibleCycle = currentCycle + 1;
 
-  // 4. Determinar los cursos elegibles para la matrícula
   const eligibleCourses = [];
   if (record.career.curriculum) {
     record.career.curriculum.forEach((cycle) => {
-      // Un curso es elegible si pertenece a un ciclo accesible
       if (cycle.cycleNumber <= accessibleCycle) {
         cycle.courses.forEach((course) => {
           const courseId = course._id.toString();
-
-          // Y si no ha sido aprobado ya
           if (!passedCourseIds.includes(courseId)) {
-            // Y si cumple con los prerrequisitos
             const prerequisites = course.prerequisites || [];
             const hasMetPrerequisites = prerequisites.every((prereqId) =>
               passedCourseIds.includes(prereqId.toString())
             );
-
             if (hasMetPrerequisites) {
               eligibleCourses.push(course);
             }

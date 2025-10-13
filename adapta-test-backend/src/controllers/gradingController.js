@@ -1,188 +1,203 @@
+// src/controllers/gradingController.js
 const Section = require("../models/sectionModel");
 const Enrollment = require("../models/enrollmentModel");
 const Mastery = require("../models/masteryModel");
-const Lesson = require("../models/lessonModel");
-const LessonCompletion = require("../models/lessonCompletionModel");
 const Submission = require("../models/submissionModel");
 const Module = require("../models/moduleModel");
 const Assignment = require("../models/assignmentModel");
 
-// @desc    Procesar las calificaciones finales para toda una sección
-// @route   POST /api/grading/process-section/:sectionId
-// @access  Private/Admin
-const processSectionGrades = async (req, res) => {
-  const { sectionId } = req.params;
+/**
+ * Middleware de ayuda para validar permisos y cargar la sección.
+ * Centraliza la lógica de verificación para evitar duplicar código.
+ */
+const validateGradingPermissions = async (req) => {
+  const section = await Section.findOne({
+    _id: req.params.sectionId,
+    institution: req.institution._id,
+  }).populate("course");
 
-  // 1. Obtener la sección y sus criterios de aprobación
-  const section = await Section.findById(sectionId).populate("course");
-  if (!section || !section.approvalCriteria) {
-    res.status(404);
-    throw new Error(
-      "Sección no encontrada o sin criterios de aprobación configurados."
-    );
+  if (!section) {
+    // Lanzamos un error que puede ser capturado por un bloque try-catch
+    const error = new Error("Sección no encontrada en esta institución.");
+    error.status = 404;
+    throw error;
   }
 
+  // Un admin de la institución puede calificar, o el profesor asignado
   if (
     req.user.role === "professor" &&
     section.instructor.toString() !== req.user._id.toString()
   ) {
-    res.status(403); // Prohibido (Forbidden)
-    throw new Error(
-      "No tienes permisos para procesar las calificaciones de esta sección."
+    const error = new Error(
+      "No tienes permisos para gestionar las calificaciones de esta sección."
     );
+    error.status = 403;
+    throw error;
   }
+  return section;
+};
 
-  // 2. Obtener todos los estudiantes matriculados en esta sección
-  const enrollments = await Enrollment.find({
-    section: sectionId,
-    status: "enrolled",
-  });
+/**
+ * Función interna para evaluar a un estudiante contra los criterios de la sección.
+ * Reutilizable para la vista previa y el procesamiento final.
+ */
+const checkStudentAgainstCriteria = async (
+  studentId,
+  section,
+  criteria,
+  institutionId
+) => {
+  let allCriteriaMet = true;
+  const checks = []; // Un array para registrar el resultado de cada verificación
 
-  let results = []; // Para guardar el resultado de cada estudiante
-
-  // 3. Iterar sobre cada estudiante y verificar si cumple los criterios
-  for (const enrollment of enrollments) {
-    const studentId = enrollment.student;
-    const criteria = section.approvalCriteria;
-    let allCriteriaMet = true; // Asumimos que aprueba hasta que un criterio falle
-    let failureReason = "";
-
-    // --- Verificación del Pilar 1: Maestría ---
-    if (criteria.mastery.required) {
-      const modulesInSection = await Module.find({
-        "publishedIn.section": sectionId,
-      });
-      for (const module of modulesInSection) {
-        const masteryRecord = await Mastery.findOne({
-          student: studentId,
-          module: module._id,
-        });
-        if (
-          !masteryRecord ||
-          masteryRecord.highestMasteryScore < criteria.mastery.minPercentage
-        ) {
-          allCriteriaMet = false;
-          failureReason = `No alcanzó el ${criteria.mastery.minPercentage}% de maestría en el módulo "${module.title}".`;
-          break; // No es necesario seguir revisando otros módulos
-        }
-      }
-    }
-
-    // --- Verificación del Pilar 2: Completitud de Tareas (si no ha fallado aún) ---
-    if (allCriteriaMet && criteria.completion.allAssignmentsRequired) {
-      const assignmentsInSection = await Assignment.find({
-        section: sectionId,
-      });
-      const studentSubmissions = await Submission.find({
-        student: studentId,
-        assignment: { $in: assignmentsInSection.map((a) => a._id) },
-      });
-
-      if (studentSubmissions.length < assignmentsInSection.length) {
-        allCriteriaMet = false;
-        failureReason = "No entregó todas las tareas obligatorias.";
-      }
-    }
-
-    // --- (Aquí iría la lógica para lecciones y exámenes sumativos si se implementa) ---
-
-    // 4. Actualizar el estado de la matrícula del estudiante
-    enrollment.status = allCriteriaMet ? "passed" : "failed";
-    await enrollment.save();
-
-    results.push({
-      student: enrollment.student,
-      status: enrollment.status,
-      reason: failureReason,
+  // --- Verificación del Pilar 1: Maestría ---
+  if (criteria.mastery?.required) {
+    const modulesInSection = await Module.find({
+      "publishedIn.section": section._id,
+      institution: institutionId,
     });
+    let modulesPassed = 0;
+    for (const module of modulesInSection) {
+      const masteryRecord = await Mastery.findOne({
+        student: studentId,
+        module: module._id,
+        institution: institutionId,
+      });
+      if (
+        masteryRecord &&
+        masteryRecord.highestMasteryScore >= criteria.mastery.minPercentage
+      ) {
+        modulesPassed++;
+      }
+    }
+    const masteryMet = modulesPassed === modulesInSection.length;
+    checks.push({
+      name: "Maestría",
+      status: `${modulesPassed} de ${modulesInSection.length} módulos superan el ${criteria.mastery.minPercentage}%`,
+      isMet: masteryMet,
+    });
+    if (!masteryMet) allCriteriaMet = false;
   }
 
-  res.status(200).json({
-    message: `Procesamiento de la sección "${section.course.title} - ${section.sectionCode}" completado.`,
-    results,
-  });
+  // --- Verificación del Pilar 2: Tareas Entregadas ---
+  if (criteria.completion?.allAssignmentsRequired) {
+    const assignmentsInSection = await Assignment.find({
+      section: section._id,
+      institution: institutionId,
+    });
+    const submissionCount = await Submission.countDocuments({
+      student: studentId,
+      assignment: { $in: assignmentsInSection.map((a) => a._id) },
+      institution: institutionId,
+    });
+    const assignmentsMet = submissionCount === assignmentsInSection.length;
+    checks.push({
+      name: "Tareas Entregadas",
+      status: `${submissionCount} de ${assignmentsInSection.length} tareas entregadas`,
+      isMet: assignmentsMet,
+    });
+    if (!assignmentsMet) allCriteriaMet = false;
+  }
+
+  // Aquí se podrían añadir más verificaciones (exámenes sumativos, etc.) en el futuro
+
+  return { allCriteriaMet, checks };
 };
 
 // @desc    Obtener una vista previa del estado de calificación de una sección
 // @route   GET /api/grading/preview/:sectionId
 // @access  Private/Professor or Admin
-const getGradingPreview = async (req, res) => {
-  const { sectionId } = req.params;
-  const section = await Section.findById(sectionId).populate("course");
+const getGradingPreview = async (req, res, next) => {
+  try {
+    const section = await validateGradingPermissions(req);
+    const criteria = section.approvalCriteria;
 
-  // ... (Validación de permisos igual que en processSectionGrades)
-  if (!section) {
-    res.status(404);
-    throw new Error("Sección no encontrada.");
-  }
-  if (
-    req.user.role === "professor" &&
-    section.instructor.toString() !== req.user._id.toString()
-  ) {
-    res.status(403);
-    throw new Error("No tienes permisos para ver esta sección.");
-  }
+    if (
+      !criteria ||
+      (!criteria.mastery?.required &&
+        !criteria.completion?.allAssignmentsRequired)
+    ) {
+      return res.json([]); // No hay criterios configurados, no hay nada que previsualizar
+    }
 
-  const enrollments = await Enrollment.find({
-    section: sectionId,
-    status: "enrolled",
-  }).populate("student", "name");
-  const criteria = section.approvalCriteria;
-  let previewResults = [];
+    const enrollments = await Enrollment.find({
+      section: section._id,
+      status: "enrolled",
+    }).populate("student", "name");
+    let previewResults = [];
 
-  for (const enrollment of enrollments) {
-    const studentId = enrollment.student._id;
-    let studentPreview = {
-      student: enrollment.student,
-      enrollmentId: enrollment._id,
-      finalStatus: "Pendiente",
-      checks: [],
-    };
+    for (const enrollment of enrollments) {
+      const { allCriteriaMet, checks } = await checkStudentAgainstCriteria(
+        enrollment.student._id,
+        section,
+        criteria,
+        req.institution._id
+      );
 
-    // --- Verificación de Maestría ---
-    if (criteria.mastery?.required) {
-      const modulesInSection = await Module.find({
-        "publishedIn.section": sectionId,
+      previewResults.push({
+        student: enrollment.student,
+        enrollmentId: enrollment._id,
+        checks: checks,
+        finalStatus: allCriteriaMet ? "APROBADO" : "DESAPROBADO",
       });
-      let modulesPassed = 0;
-      for (const module of modulesInSection) {
-        const masteryRecord = await Mastery.findOne({
-          student: studentId,
-          module: module._id,
+    }
+    res.json(previewResults);
+  } catch (error) {
+    res.status(error.status || 500).json({ message: error.message });
+  }
+};
+
+// @desc    Procesar las calificaciones finales para toda una sección
+// @route   POST /api/grading/process-section/:sectionId
+// @access  Private/Admin or Professor
+const processSectionGrades = async (req, res, next) => {
+  try {
+    const section = await validateGradingPermissions(req);
+    const criteria = section.approvalCriteria;
+
+    if (
+      !criteria ||
+      (!criteria.mastery?.required &&
+        !criteria.completion?.allAssignmentsRequired)
+    ) {
+      return res
+        .status(400)
+        .json({
+          message:
+            "No se han configurado criterios de aprobación para procesar esta sección.",
         });
-        if (
-          masteryRecord &&
-          masteryRecord.highestMasteryScore >= criteria.mastery.minPercentage
-        ) {
-          modulesPassed++;
-        }
-      }
-      studentPreview.checks.push({
-        name: "Maestría",
-        status: `${modulesPassed} / ${modulesInSection.length} módulos superan el ${criteria.mastery.minPercentage}%`,
-        isMet: modulesPassed === modulesInSection.length,
+    }
+
+    const enrollments = await Enrollment.find({
+      section: section._id,
+      status: "enrolled",
+    });
+    let results = [];
+
+    for (const enrollment of enrollments) {
+      const { allCriteriaMet } = await checkStudentAgainstCriteria(
+        enrollment.student,
+        section,
+        criteria,
+        req.institution._id
+      );
+
+      enrollment.status = allCriteriaMet ? "passed" : "failed";
+      await enrollment.save();
+
+      results.push({
+        studentId: enrollment.student,
+        status: enrollment.status,
       });
     }
 
-    // --- Verificación de Tareas ---
-    if (criteria.completion?.allAssignmentsRequired) {
-      const assignmentsInSection = await Assignment.find({
-        section: sectionId,
-      });
-      const submissionCount = await Submission.countDocuments({
-        student: studentId,
-        assignment: { $in: assignmentsInSection.map((a) => a._id) },
-      });
-      studentPreview.checks.push({
-        name: "Tareas Entregadas",
-        status: `${submissionCount} / ${assignmentsInSection.length}`,
-        isMet: submissionCount === assignmentsInSection.length,
-      });
-    }
-
-    previewResults.push(studentPreview);
+    res.status(200).json({
+      message: `Procesamiento de la sección "${section.course.title}" completado. ${results.length} estudiantes fueron procesados.`,
+      results,
+    });
+  } catch (error) {
+    res.status(error.status || 500).json({ message: error.message });
   }
-  res.json(previewResults);
 };
 
 module.exports = { processSectionGrades, getGradingPreview };

@@ -4,17 +4,19 @@ import { Link } from "react-router-dom";
 import axios from "axios";
 
 // --- Acciones de Redux ---
+import { register, reset as resetAuth } from "../auth/authSlice";
+import {
+  getUsers, // <-- Nos aseguraremos de llamar a esta desde el padre
+  getCoordinators,
+  getProfessors,
+  reset as resetUsers,
+} from "../users/usersSlice";
 import {
   getCareers,
   createCareer,
   assignCoordinator,
   reset as resetCareers,
 } from "../careers/careerSlice";
-import {
-  getCoordinators,
-  getProfessors,
-  reset as resetUsers,
-} from "../users/usersSlice";
 import {
   getCourses,
   createCourse,
@@ -27,35 +29,26 @@ import {
 } from "../academic-cycles/academicCycleSlice";
 import { store } from "../../services/store";
 
-// --- Sub-componente: Modal para Asignar Coordinador ---
+// ##################################################################
+// ### Sub-componentes (Sin cambios, pero incluidos para completitud) ###
+// ##################################################################
+
 const AssignCoordinatorModal = ({ career, onClose }) => {
   const dispatch = useDispatch();
   const { coordinators, isLoading } = useSelector((state) => state.users);
   const [selectedCoordinator, setSelectedCoordinator] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    // Solo cargar coordinadores si no están ya cargados
-    if (!coordinators.length) {
-      dispatch(getCoordinators());
-    }
-  }, [dispatch, coordinators.length]);
+    dispatch(getCoordinators());
+  }, [dispatch]);
 
-  const onSubmit = async (e) => {
+  const onSubmit = (e) => {
     e.preventDefault();
-    if (selectedCoordinator && !isSubmitting) {
-      setIsSubmitting(true);
-      try {
-        await dispatch(
-          assignCoordinator({ careerId: career._id, userId: selectedCoordinator })
-        ).unwrap();
-        // Solo cerrar el modal si la asignación fue exitosa
-        onClose();
-      } catch (error) {
-        console.error('Error al asignar coordinador:', error);
-      } finally {
-        setIsSubmitting(false);
-      }
+    if (selectedCoordinator) {
+      dispatch(
+        assignCoordinator({ careerId: career._id, userId: selectedCoordinator })
+      );
+      onClose();
     }
   };
 
@@ -98,7 +91,6 @@ const AssignCoordinatorModal = ({ career, onClose }) => {
     </div>
   );
 };
-
 const CareerManagementTab = ({ careers, onAssignCoordinatorClick }) => {
   const dispatch = useDispatch();
   const [name, setName] = useState("");
@@ -198,7 +190,6 @@ const CareerManagementTab = ({ careers, onAssignCoordinatorClick }) => {
     </section>
   );
 };
-
 const CourseManagementTab = ({ courses }) => {
   const dispatch = useDispatch();
   const [title, setTitle] = useState("");
@@ -278,7 +269,6 @@ const CourseManagementTab = ({ courses }) => {
     </section>
   );
 };
-
 const AcademicManagementTab = ({ courses, professors, cycles }) => {
   const dispatch = useDispatch();
   const [cycleName, setCycleName] = useState("");
@@ -437,94 +427,226 @@ const AcademicManagementTab = ({ courses, professors, cycles }) => {
   );
 };
 
-// --- Componente Principal: Dashboard de Administrador ---
+// ##################################################################
+// ### Sub-componente CORREGIDO: Pestaña para Gestionar Usuarios ###
+// ##################################################################
+const UserManagementTab = () => {
+  const dispatch = useDispatch();
+  const { user: adminUser } = useSelector((state) => state.auth);
+  // Leemos los datos que el componente padre ya solicitó
+  const { users, isLoading } = useSelector((state) => state.users);
+
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    password: "",
+    role: "",
+  });
+  const { name, email, password, role } = formData;
+
+  // YA NO NECESITAMOS EL useEffect aquí para pedir los datos
+
+  const onChange = (e) =>
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+
+  const onSubmit = (e) => {
+    e.preventDefault();
+    dispatch(register(formData))
+      .unwrap()
+      .then(() => {
+        alert(`Usuario ${name} creado exitosamente!`);
+        setFormData({ name: "", email: "", password: "", role: "" });
+        dispatch(getUsers()); // Refrescar la lista de usuarios tras la creación
+      })
+      .catch((error) => alert(`Error al crear usuario: ${error}`));
+  };
+
+  const institutionType = adminUser.institution.type;
+  const allowedRoles =
+    institutionType === "university"
+      ? ["student", "professor", "coordinator", "admin"]
+      : ["student", "professor", "parent", "admin"];
+
+  return (
+    <section>
+      <h2>Usuarios de la Institución</h2>
+      {isLoading ? (
+        <p>Cargando usuarios...</p>
+      ) : (
+        <ul style={{ listStyle: "none", padding: 0 }}>
+          {users &&
+            users.map((u) => (
+              <li key={u._id} style={styles.card}>
+                <strong>{u.name}</strong> ({u.email}) - Rol: {u.role}
+              </li>
+            ))}
+        </ul>
+      )}
+
+      <div style={styles.formContainer}>
+        <h3>Crear Nuevo Usuario</h3>
+        <form onSubmit={onSubmit}>
+          <input
+            name="name"
+            value={name}
+            onChange={onChange}
+            placeholder="Nombre completo"
+            required
+            style={styles.input}
+          />
+          <input
+            name="email"
+            value={email}
+            type="email"
+            onChange={onChange}
+            placeholder="Correo electrónico"
+            required
+            style={styles.input}
+          />
+          <input
+            name="password"
+            value={password}
+            type="password"
+            onChange={onChange}
+            placeholder="Contraseña temporal"
+            required
+            style={styles.input}
+          />
+          <select
+            name="role"
+            value={role}
+            onChange={onChange}
+            required
+            style={styles.input}
+          >
+            <option value="" disabled>
+              -- Selecciona un rol --
+            </option>
+            {allowedRoles.map((r) => (
+              <option key={r} value={r}>
+                {r}
+              </option>
+            ))}
+          </select>
+          <button type="submit" style={{ marginTop: "10px" }}>
+            Crear Usuario
+          </button>
+        </form>
+      </div>
+    </section>
+  );
+};
+
+// ######################################################################
+// ### Componente Principal CORREGIDO: Dashboard de Administrador ###
+// ######################################################################
 const AdminDashboard = () => {
   const dispatch = useDispatch();
-  const [modalCareer, setModalCareer] = useState(null);
-  const [activeTab, setActiveTab] = useState("careers");
+  const { user } = useSelector((state) => state.auth);
 
-  // Selectores de Redux
+  // Unificamos todos los estados de carga aquí
   const { careers, isLoading: careersLoading } = useSelector(
     (state) => state.careers
   );
   const { courses, isLoading: coursesLoading } = useSelector(
     (state) => state.courses
   );
-  const { professors, isLoading: professorsLoading } = useSelector(
-    (state) => state.users
-  );
-  const { cycles, isLoading: cyclesLoading } = useSelector(
-    (state) => state.academicCycles
-  );
+  const {
+    professors,
+    cycles,
+    isLoading: academicLoading,
+  } = useSelector((state) => ({
+    professors: state.users.professors,
+    cycles: state.academicCycles.cycles,
+    isLoading: state.users.isLoading || state.academicCycles.isLoading,
+  }));
+  // El estado de carga para `getUsers` viene del mismo slice que `getProfessors`.
+  const { isLoading: usersLoading } = useSelector((state) => state.users);
+
+  const [modalCareer, setModalCareer] = useState(null);
+  const [activeTab, setActiveTab] = useState("users");
+
+  const isUniversity = user.institution.type === "university";
 
   useEffect(() => {
-    dispatch(getCareers());
+    // El padre despacha TODAS las acciones necesarias al montarse
+    dispatch(getUsers()); // <-- LLAMADA CENTRALIZADA
+    if (isUniversity) {
+      dispatch(getCareers());
+      dispatch(getCoordinators());
+    }
     dispatch(getCourses());
     dispatch(getProfessors());
     dispatch(getCycles());
 
     return () => {
+      // La limpieza se mantiene en el padre
       dispatch(resetCareers());
       dispatch(resetCourses());
       dispatch(resetUsers());
       dispatch(resetCycles());
+      dispatch(resetAuth());
     };
-  }, [dispatch]);
+  }, [dispatch, isUniversity]);
 
-  if (careersLoading || coursesLoading || professorsLoading || cyclesLoading) {
-    return <h3>Cargando datos de administración...</h3>;
-  }
+  // Un solo indicador de carga para todo el dashboard
+  const isLoadingData =
+    usersLoading || careersLoading || coursesLoading || academicLoading;
 
   return (
     <div>
       <h1>Dashboard de Administración</h1>
       <nav style={styles.nav}>
         <button
-          onClick={() => setActiveTab("careers")}
-          style={{
-            ...styles.navButton,
-            ...(activeTab === "careers" && styles.activeNavButton),
-          }}
+          onClick={() => setActiveTab("users")}
+          style={getTabStyle("users", activeTab)}
         >
-          Gestionar Carreras
+          Gestionar Usuarios
         </button>
+        {isUniversity && (
+          <button
+            onClick={() => setActiveTab("careers")}
+            style={getTabStyle("careers", activeTab)}
+          >
+            Gestionar Carreras
+          </button>
+        )}
         <button
           onClick={() => setActiveTab("courses")}
-          style={{
-            ...styles.navButton,
-            ...(activeTab === "courses" && styles.activeNavButton),
-          }}
+          style={getTabStyle("courses", activeTab)}
         >
           Gestionar Cursos
         </button>
         <button
           onClick={() => setActiveTab("academic")}
-          style={{
-            ...styles.navButton,
-            ...(activeTab === "academic" && styles.activeNavButton),
-          }}
+          style={getTabStyle("academic", activeTab)}
         >
           Gestión Académica
         </button>
       </nav>
 
-      {/* Renderizado condicional de la pestaña activa */}
-      {activeTab === "careers" && (
-        <CareerManagementTab
-          careers={careers}
-          onAssignCoordinatorClick={setModalCareer}
-        />
-      )}
-      {activeTab === "courses" && <CourseManagementTab courses={courses} />}
-      {activeTab === "academic" && (
-        <AcademicManagementTab
-          courses={courses}
-          professors={professors}
-          cycles={cycles}
-        />
+      {isLoadingData ? (
+        <h3>Cargando datos de administración...</h3>
+      ) : (
+        <div>
+          {activeTab === "users" && <UserManagementTab />}
+          {activeTab === "careers" && isUniversity && (
+            <CareerManagementTab
+              careers={careers}
+              onAssignCoordinatorClick={setModalCareer}
+            />
+          )}
+          {activeTab === "courses" && <CourseManagementTab courses={courses} />}
+          {activeTab === "academic" && (
+            <AcademicManagementTab
+              courses={courses}
+              professors={professors}
+              cycles={cycles}
+            />
+          )}
+        </div>
       )}
 
-      {/* El modal se renderiza fuera del flujo de las pestañas */}
       {modalCareer && (
         <AssignCoordinatorModal
           career={modalCareer}
@@ -535,7 +657,7 @@ const AdminDashboard = () => {
   );
 };
 
-// --- Estilos (para mantener todo en un archivo) ---
+// --- Estilos ---
 const styles = {
   card: {
     border: "1px solid #ddd",
@@ -575,7 +697,11 @@ const styles = {
   },
 };
 
-// Estilos para el Modal
+const getTabStyle = (tabName, activeTab) => ({
+  ...styles.navButton,
+  ...(activeTab === tabName && styles.activeNavButton),
+});
+
 const modalStyles = {
   overlay: {
     position: "fixed",

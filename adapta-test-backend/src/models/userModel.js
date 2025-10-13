@@ -17,16 +17,26 @@ const userSchema = mongoose.Schema(
       type: String,
       required: [true, "Por favor, añade una contraseña."],
     },
-    // COMENTADO: Institución ya no es requerida
-    // institution: {
-    //   type: mongoose.Schema.Types.ObjectId,
-    //   ref: "Institution",
-    //   required: true,
-    // },
+    // CAMPO AÑADIDO: Referencia a la institución a la que pertenece el usuario
     role: {
       type: String,
-      enum: ["student", "professor", "coordinator", "admin", "parent"],
+      enum: [
+        "student",
+        "professor",
+        "coordinator",
+        "admin",
+        "parent",
+        "superadmin",
+      ], // <-- AÑADIR 'superadmin'
       required: true,
+    },
+    institution: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Institution",
+      // Ahora es requerido solo si el rol NO es superadmin
+      required: function () {
+        return this.role !== "superadmin";
+      },
     },
     studentGrade: {
       type: String,

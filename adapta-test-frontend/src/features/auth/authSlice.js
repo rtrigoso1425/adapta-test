@@ -6,18 +6,36 @@ const user = JSON.parse(localStorage.getItem("user"));
 
 const initialState = {
   user: user ? user : null,
+  institutions: [], // Un nuevo estado para guardar la lista de instituciones
+  isLoadingInstitutions: false, // Para mostrar un spinner mientras se cargan
   isError: false,
   isSuccess: false,
   isLoading: false,
   message: "",
 };
 
+export const getInstitutions = createAsyncThunk(
+  "auth/getInstitutions",
+  async (_, thunkAPI) => {
+    try {
+      return await authService.getInstitutions();
+    } catch (error) {
+      const message = error.response?.data?.message || error.message;
+      return thunkAPI.rejectWithValue(message);
+    }
+  }
+);
+
 // Acción Asíncrona para Registrar Usuario (Thunk)
 export const register = createAsyncThunk(
   "auth/register",
-  async (user, thunkAPI) => {
+  // Ahora el thunk acepta un objeto con los datos del usuario a crear
+  async (userData, thunkAPI) => {
     try {
-      return await authService.register(user);
+      // Obtenemos el token del admin que está realizando la acción
+      const token = thunkAPI.getState().auth.user.token;
+      // El servicio se encargará de pasar el token en la cabecera
+      return await authService.register(userData, token);
     } catch (error) {
       const message =
         error.response?.data?.message || error.message || error.toString();
@@ -55,6 +73,17 @@ export const authSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
+      .addCase(getInstitutions.pending, (state) => {
+        state.isLoadingInstitutions = true;
+      })
+      .addCase(getInstitutions.fulfilled, (state, action) => {
+        state.isLoadingInstitutions = false;
+        state.institutions = action.payload;
+      })
+      .addCase(getInstitutions.rejected, (state, action) => {
+        state.isLoadingInstitutions = false;
+        state.message = action.payload; // Guardamos el mensaje de error
+      })
       .addCase(register.pending, (state) => {
         state.isLoading = true;
       })

@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { Link, useNavigate } from "react-router-dom";
-import { login, reset } from "../features/auth/authSlice";
+import { login, reset, getInstitutions } from "../features/auth/authSlice";
 import { HoverButton } from "../components/ui/hover-button";
 import { Input } from "../components/ui/input";
 import { Mail, Lock } from "lucide-react";
@@ -16,16 +16,27 @@ const LoginPage = () => {
   const [formData, setFormData] = useState({
     email: "",
     password: "",
+    institutionId: "",
   });
 
-  const { email, password } = formData;
+  const { email, password, institutionId } = formData;
 
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
-  const { user, isLoading, isError, isSuccess, message } = useSelector(
-    (state) => state.auth
-  );
+  const {
+    user,
+    isLoading,
+    isError,
+    isSuccess,
+    message,
+    institutions,
+    isLoadingInstitutions,
+  } = useSelector((state) => state.auth);
+
+  useEffect(() => {
+    dispatch(getInstitutions());
+  }, [dispatch]);
 
   useEffect(() => {
     if (isError) {
@@ -48,12 +59,18 @@ const LoginPage = () => {
 
   const onSubmit = (e) => {
     e.preventDefault();
-    const userData = { email, password };
+
+    if (!institutionId) {
+      alert("Por favor, selecciona tu institución.");
+      return;
+    }
+
+    const userData = { email, password, institutionId };
     dispatch(login(userData));
   };
 
   if (isLoading) {
-    return <h1>Cargando...</h1>;
+    return <h1>Verificando credenciales...</h1>;
   }
 
   return (
@@ -112,7 +129,7 @@ const LoginPage = () => {
                     className="w-full border-0 focus-visible:ring-0 focus-visible:outline-none shadow-none text-black"/>
                 </div>
               </div>
-
+              
               <Button
                 type="submit"
                 className="w-full rounded-xl hover:cursor-pointer text-white bg-black font-medium shadow-md">

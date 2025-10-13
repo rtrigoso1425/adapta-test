@@ -1,94 +1,191 @@
-const mongoose = require('mongoose');
-const dotenv = require('dotenv');
-const { users, courses, academicCycles, modules, lessons, questions } = require('./data/sampleData.js');
+// seeder.js
+const mongoose = require("mongoose");
+const dotenv = require("dotenv");
+const connectDB = require("./src/config/db.js");
 
 // Importar todos los modelos
-const User = require('./src/models/userModel.js');
-const Course = require('./src/models/courseModel.js');
-const AcademicCycle = require('./src/models/academicCycleModel.js');
-const Section = require('./src/models/sectionModel.js');
-const Enrollment = require('./src/models/enrollmentModel.js');
-const Module = require('./src/models/moduleModel.js');
-const Lesson = require('./src/models/lessonModel.js');
-const Question = require('./src/models/questionModel.js');
-const Assignment = require('./src/models/assignmentModel.js');
-const Submission = require('./src/models/submissionModel.js');
-
-const connectDB = require('./src/config/db.js');
+const User = require("./src/models/userModel.js");
+const Institution = require("./src/models/institutionModel.js");
+const Course = require("./src/models/courseModel.js");
+const AcademicCycle = require("./src/models/academicCycleModel.js");
+const Section = require("./src/models/sectionModel.js");
+const Enrollment = require("./src/models/enrollmentModel.js");
+const Module = require("./src/models/moduleModel.js");
+const Question = require("./src/models/questionModel.js");
+// ... y cualquier otro modelo que necesites limpiar
 
 dotenv.config();
 
 const importData = async () => {
-    try {
-        await connectDB();
-        // Limpiar la base de datos
-        await Promise.all([
-            User.deleteMany(), Course.deleteMany(), AcademicCycle.deleteMany(),
-            Section.deleteMany(), Enrollment.deleteMany(), Module.deleteMany(),
-            Lesson.deleteMany(), Question.deleteMany(), Assignment.deleteMany(), Submission.deleteMany()
-        ]);
-        console.log('Datos antiguos eliminados...');
+  try {
+    await connectDB();
 
-        // --- Creación de Datos ---
-        const createdUsers = await User.insertMany(users);
-        const professor1 = createdUsers.find(u => u.email === 'carlos.santana@adaptatest.com');
-        const professor2 = createdUsers.find(u => u.email === 'andrea.bocelli@adaptatest.com');
-        const student1 = createdUsers.find(u => u.email === 'ana.torres@adaptatest.com');
-        const student2 = createdUsers.find(u => u.email === 'luis.vega@adaptatest.com');
+    // Limpiar TODA la base de datos
+    await Promise.all([
+      Institution.deleteMany(),
+      User.deleteMany(),
+      Course.deleteMany(),
+      AcademicCycle.deleteMany(),
+      Section.deleteMany(),
+      Enrollment.deleteMany(),
+      Module.deleteMany(),
+      Question.deleteMany(),
+    ]);
+    console.log("--- Base de Datos Limpiada ---");
 
-        // Cursos (como plantillas, sin instructor)
-        const createdCourses = await Course.insertMany(courses.map(c => ({ title: c.title, description: c.description })));
-        const algebraCourse = createdCourses.find(c => c.title.includes('Álgebra'));
-        const programmingCourse = createdCourses.find(c => c.title.includes('Programación'));
+    // --- 1. Crear Super Admin ---
+    const superadmin = await User.create({
+      name: "Super Admin",
+      email: "superadmin@adaptatest.com",
+      password: "123456",
+      role: "superadmin",
+    });
+    console.log("Super Admin Creado");
 
-        const createdCycle = (await AcademicCycle.insertMany(academicCycles))[0];
+    // --- 2. Crear Instituciones ---
+    const university = await Institution.create({
+      name: "Universidad Tecnológica Demo",
+      code: "UTD",
+      type: "university",
+      settings: { allowParentAccess: false, requiresPrerequisites: true },
+    });
 
-        // Secciones (aquí se asigna el instructor)
-        const algebraSection = await Section.create({ course: algebraCourse._id, instructor: professor1._id, academicCycle: createdCycle._id, sectionCode: 'ALG-001', capacity: 30 });
-        const programmingSection = await Section.create({ course: programmingCourse._id, instructor: professor2._id, academicCycle: createdCycle._id, sectionCode: 'CS-001', capacity: 25 });
+    const highSchool = await Institution.create({
+      name: "Colegio San Martín",
+      code: "CSM",
+      type: "high_school",
+      settings: { allowParentAccess: true, requiresPrerequisites: false },
+    });
+    console.log("Instituciones Creadas: UTD y CSM");
 
-        await Enrollment.insertMany([
-            { student: student1._id, section: algebraSection._id },
-            { student: student2._id, section: programmingSection._id },
-            { student: student2._id, section: algebraSection._id },
-        ]);
-        console.log('Entidades académicas creadas...');
+    // --- 3. Crear Usuarios para cada Institución ---
+    // Universidad
+    const uniAdmin = await User.create({
+      name: "Admin UTD",
+      email: "admin@utd.com",
+      password: "123456",
+      role: "admin",
+      institution: university._id,
+    });
+    const uniProf = await User.create({
+      name: "Profesor UTD",
+      email: "profesor@utd.com",
+      password: "123456",
+      role: "professor",
+      institution: university._id,
+    });
+    const uniStudent = await User.create({
+      name: "Alumno UTD",
+      email: "alumno@utd.com",
+      password: "123456",
+      role: "student",
+      institution: university._id,
+    });
 
-        // Contenido de la Biblioteca del Profesor 1
-        const p1_mod1 = await Module.create({ title: 'Unidad 1: Expresiones Algebraicas', owner: professor1._id });
-        const p1_mod2 = await Module.create({ title: 'Unidad 2: Ecuaciones de Primer Grado', owner: professor1._id });
-        await Lesson.create({ module: p1_mod1._id, title: '1.1 - ¿Qué es un monomio?', content: '...', order: 1 });
-        await Lesson.create({ module: p1_mod1._id, title: '1.2 - Suma y Resta de Polinomios', content: '...', order: 2 });
-        await Question.create({ module: p1_mod1._id, owner: professor1._id, difficulty: 1, questionText: '¿Cuántos términos tiene un binomio?', options: [{ text: 'Dos', isCorrect: true }] });
+    // Colegio
+    const hsAdmin = await User.create({
+      name: "Admin CSM",
+      email: "admin@csm.com",
+      password: "123456",
+      role: "admin",
+      institution: highSchool._id,
+    });
+    const hsProf = await User.create({
+      name: "Profesor CSM",
+      email: "profesor@csm.com",
+      password: "123456",
+      role: "professor",
+      institution: highSchool._id,
+    });
+    const hsStudent = await User.create({
+      name: "Alumno CSM",
+      email: "alumno@csm.com",
+      password: "123456",
+      role: "student",
+      institution: highSchool._id,
+      studentGrade: "3ro",
+    });
+    const hsParent = await User.create({
+      name: "Padre CSM",
+      email: "padre@csm.com",
+      password: "123456",
+      role: "parent",
+      institution: highSchool._id,
+      parentOf: [hsStudent._id],
+    });
+    console.log("Usuarios de Demo Creados");
 
-        // Contenido de la Biblioteca del Profesor 2
-        const p2_mod1 = await Module.create({ title: 'Unidad 1: Fundamentos y Sintaxis de JS', owner: professor2._id });
-        await Lesson.create({ module: p2_mod1._id, title: '1.1 - Variables y Tipos de Datos', content: '...', order: 1 });
-        await Question.create({ module: p2_mod1._id, owner: professor2._id, difficulty: 1, questionText: '¿Palabra clave para una variable que no cambiará?', options: [{ text: 'const', isCorrect: true }] });
+    // --- 4. Crear Datos Académicos ---
+    // Curso para Universidad
+    const uniCourse = await Course.create({
+      title: "Cálculo I",
+      description: "Curso de cálculo diferencial.",
+      institution: university._id,
+    });
 
-        console.log('Contenido de Bibliotecas creado...');
+    // Curso para Colegio
+    const hsCourse = await Course.create({
+      title: "Matemática 3ro",
+      description: "Matemática para 3ro de secundaria.",
+      institution: highSchool._id,
+      targetGrade: "3ro",
+    });
 
-        // Publicar Módulos y crear Tareas
-        p1_mod1.publishedIn.push({ section: algebraSection._id });
-        await p1_mod1.save();
-        await Assignment.create({ section: algebraSection._id, title: 'Tarea 1: Ensayo de Polinomios' });
+    const cycle = await AcademicCycle.create({
+      name: "Ciclo 2025-II",
+      startDate: new Date("2025-08-01"),
+      endDate: new Date("2025-12-20"),
+      isActive: true,
+      institution: university._id,
+    });
+    const hsCycle = await AcademicCycle.create({
+      name: "Año Escolar 2025",
+      startDate: new Date("2025-03-01"),
+      endDate: new Date("2025-12-20"),
+      isActive: true,
+      institution: highSchool._id,
+    });
 
-        console.log('¡Datos importados exitosamente!');
-        process.exit();
-    } catch (error) {
-        console.error(`Error: ${error}`);
-        process.exit(1);
-    }
-};
+    const uniSection = await Section.create({
+      course: uniCourse._id,
+      instructor: uniProf._id,
+      academicCycle: cycle._id,
+      sectionCode: "C1-001",
+      capacity: 30,
+      institution: university._id,
+    });
+    const hsSection = await Section.create({
+      course: hsCourse._id,
+      instructor: hsProf._id,
+      academicCycle: hsCycle._id,
+      sectionCode: "3A",
+      capacity: 25,
+      institution: highSchool._id,
+    });
 
-const destroyData = async () => {
-    // Implementar lógica para borrar datos si se desea
-    console.log('Función de destrucción no implementada.');
+    await Enrollment.create({
+      student: uniStudent._id,
+      section: uniSection._id,
+      institution: university._id,
+    });
+    await Enrollment.create({
+      student: hsStudent._id,
+      section: hsSection._id,
+      institution: highSchool._id,
+    });
+    console.log("Cursos, Secciones y Matrículas Creadas");
+
+    console.log("\n¡DATOS DE PRUEBA IMPORTADOS EXITOSAMENTE!");
     process.exit();
+  } catch (error) {
+    console.error(`Error en el seeder: ${error}`);
+    process.exit(1);
+  }
 };
 
-if (process.argv[2] === '-d') {
-    destroyData();
+// Lógica para correr el seeder desde la terminal
+if (process.argv[2] === "-d") {
+  // destroyData(); // Puedes implementar una función para destruir si lo necesitas
 } else {
-    importData();
+  importData();
 }

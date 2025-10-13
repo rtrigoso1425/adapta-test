@@ -18,6 +18,8 @@ const academicRecordRoutes = require("./routes/academicRecordRoutes");
 const submissionRoutes = require("./routes/submissionRoutes"); // <-- 1. IMPORTAR
 const gradingRoutes = require("./routes/gradingRoutes"); // <-- IMPORTAR
 const analyticsRoutes = require("./routes/analyticsRoutes"); // <-- IMPORTAR
+const parentRoutes = require("./routes/parentRoutes");
+const institutionRoutes = require("./routes/institutionRoutes");
 
 dotenv.config();
 connectDB();
@@ -49,6 +51,8 @@ app.use("/api/academic-records", academicRecordRoutes);
 app.use("/api/submissions", submissionRoutes); // <-- 2. AÑADIR ESTA LÍNEA
 app.use("/api/grading", gradingRoutes); // <-- AÑADIR
 app.use("/api/analytics", analyticsRoutes); // <-- AÑADIR
+app.use("/api/parents", parentRoutes);
+app.use("/api/institutions", institutionRoutes);
 
 // Middleware para capturar rutas no encontradas (error 404)
 app.use((req, res, next) => {

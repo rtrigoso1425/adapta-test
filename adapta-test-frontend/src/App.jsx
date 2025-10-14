@@ -12,11 +12,16 @@ import LearningPage from './pages/LearningPage'; // <-- IMPORTAR
 import EvaluationPage from "./pages/EvaluationPage";
 import CurriculumViewPage from "./pages/CurriculumViewPage";
 
+import { useLocation } from 'react-router-dom';
+
 function App() {
+  const location = useLocation();
+  const isLoginPage = location.pathname === '/login';
+
   return (
     <>
-      <Header />
-      <main style={{ padding: "20px" }}>
+      {!isLoginPage && <Header />}
+      <main style={{ padding: isLoginPage ? "0" : "20px" }}>
         <Routes>
           {/* Rutas Públicas */}
           <Route path="/" element={<HomePage />} />

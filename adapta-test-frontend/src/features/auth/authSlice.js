@@ -1,13 +1,13 @@
-// src/features/auth/authSlice.js
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import authService from "./authService";
 
+// Obtener usuario del localStorage si ya existe una sesión
 const user = JSON.parse(localStorage.getItem("user"));
 
 const initialState = {
   user: user ? user : null,
-  institutions: [],
-  isLoadingInstitutions: false,
+  institutions: [], // Un nuevo estado para guardar la lista de instituciones
+  isLoadingInstitutions: false, // Para mostrar un spinner mientras se cargan
   isError: false,
   isSuccess: false,
   isLoading: false,
@@ -26,12 +26,15 @@ export const getInstitutions = createAsyncThunk(
   }
 );
 
-// Acción para que un admin registre un nuevo usuario
+// Acción Asíncrona para Registrar Usuario (Thunk)
 export const register = createAsyncThunk(
   "auth/register",
+  // Ahora el thunk acepta un objeto con los datos del usuario a crear
   async (userData, thunkAPI) => {
     try {
+      // Obtenemos el token del admin que está realizando la acción
       const token = thunkAPI.getState().auth.user.token;
+      // El servicio se encargará de pasar el token en la cabecera
       return await authService.register(userData, token);
     } catch (error) {
       const message =
@@ -41,7 +44,7 @@ export const register = createAsyncThunk(
   }
 );
 
-// Acción para que un usuario inicie sesión
+// Acción Asíncrona para Iniciar Sesión
 export const login = createAsyncThunk("auth/login", async (user, thunkAPI) => {
   try {
     return await authService.login(user);
@@ -52,6 +55,7 @@ export const login = createAsyncThunk("auth/login", async (user, thunkAPI) => {
   }
 });
 
+// Acción Asíncrona para Cerrar Sesión
 export const logout = createAsyncThunk("auth/logout", async () => {
   authService.logout();
 });
@@ -78,21 +82,21 @@ export const authSlice = createSlice({
       })
       .addCase(getInstitutions.rejected, (state, action) => {
         state.isLoadingInstitutions = false;
-        state.message = action.payload;
+        state.message = action.payload; // Guardamos el mensaje de error
       })
       .addCase(register.pending, (state) => {
         state.isLoading = true;
       })
-      // --- LA CORRECCIÓN ESTÁ AQUÍ ---
-      .addCase(register.fulfilled, (state) => {
+      .addCase(register.fulfilled, (state, action) => {
         state.isLoading = false;
         state.isSuccess = true;
-        // YA NO MODIFICAMOS state.user. La sesión del admin permanece intacta.
+        state.user = action.payload;
       })
       .addCase(register.rejected, (state, action) => {
         state.isLoading = false;
         state.isError = true;
         state.message = action.payload;
+        state.user = null;
       })
       .addCase(login.pending, (state) => {
         state.isLoading = true;
@@ -100,7 +104,7 @@ export const authSlice = createSlice({
       .addCase(login.fulfilled, (state, action) => {
         state.isLoading = false;
         state.isSuccess = true;
-        state.user = action.payload; // El login SÍ debe actualizar la sesión
+        state.user = action.payload;
       })
       .addCase(login.rejected, (state, action) => {
         state.isLoading = false;

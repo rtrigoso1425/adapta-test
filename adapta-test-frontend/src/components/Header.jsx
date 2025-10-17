@@ -21,35 +21,48 @@ const Header = () => {
       borderBottom: '1px solid #2a2a2aff', 
       display: 'flex', 
       justifyContent: 'space-between', 
-      alignItems: 'center'
+      alignItems: 'center' // Esto alinea verticalmente todos los hijos
     }}>
-      <div>
-        <Link to="/" style={{ textDecoration: 'none', color: 'white', fontSize: '1.5rem' }}>
+      <div style={{ display: 'flex', alignItems: 'center' }}>
+        <Link to="/" style={{ 
+          textDecoration: 'none', 
+          color: 'white', 
+          fontSize: '1.5rem',
+          display: 'flex',
+          alignItems: 'center'
+        }}>
           <Text_03 text='AdaptaTest'/>
         </Link>
       </div>
       <nav>
-        <ul style={{ listStyle: 'none', margin: 0, display: 'flex', gap: '20px' }}>
+        <ul style={{ 
+          listStyle: 'none', 
+          margin: 0, 
+          padding: 0,
+          display: 'flex', 
+          gap: '20px',
+          alignItems: 'center' // Alinea los items de la lista
+        }}>
           {user ? (
             <>
-              <li>
+              <li style={{ display: 'flex', alignItems: 'center' }}>
                 <HoverButton as={Link} to="/dashboard">
                   Dashboard
                 </HoverButton>
               </li>
-              <li>
+              <li style={{ display: 'flex', alignItems: 'center' }}>
                 <HoverButton as={Link} to="/courses">
                   Cursos
                 </HoverButton>
               </li>
-              <li>
+              <li style={{ display: 'flex', alignItems: 'center' }}>
                 <HoverButton onClick={onLogout}>
                   Logout
                 </HoverButton>
               </li>
             </>
           ) : (
-            <li>
+            <li style={{ display: 'flex', alignItems: 'center' }}>
               <HoverButton as={Link} to="/login">
                 Login
               </HoverButton>

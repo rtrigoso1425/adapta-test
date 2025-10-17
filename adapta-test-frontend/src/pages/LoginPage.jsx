@@ -9,6 +9,7 @@ import { Button } from "../components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { BlurFade } from "../components/ui/blur-fade";
 import { Text_03 } from "../components/ui/wave-text";
+import { AsyncSelect } from "../components/ui/async-select"
 
 const LoginPage = () => {
   const [formData, setFormData] = useState({
@@ -174,7 +175,7 @@ const LoginPage = () => {
                       required
                       className="w-full border-0 focus:ring-0 focus:outline-none bg-transparent text-black"
                     >
-                      <option value="">-- Elige una opción --</option>
+                      <option value="">Instituciones</option>
                       {institutions && institutions.length > 0 ? (
                         institutions.map((inst) => (
                           <option key={inst._id} value={inst._id}>

@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card"
 import { BlurFade } from "../components/ui/blur-fade";
 import { Text_03 } from "../components/ui/wave-text";
 import { AsyncSelect } from "../components/ui/async-select"
+import { color } from "framer-motion";
 
 const LoginPage = () => {
   const [formData, setFormData] = useState({
@@ -76,6 +77,32 @@ const LoginPage = () => {
       institutionId 
     };
     dispatch(login(userData));
+  };
+
+  const handleInstitutionChange = (value) => {
+    setFormData((prevState) => ({
+      ...prevState,
+      institutionId: value,
+    }));
+  };
+
+  // Función fetcher mejorada
+  const fetchInstitutions = async (query) => {
+    // Asegurarnos de que institutions esté disponible
+    const availableInstitutions = institutions || [];
+  
+    // Si no hay query, devolver todas
+    if (!query || query.trim() === "") {
+      return availableInstitutions;
+    }
+  
+    // Filtrar según el query
+    const filtered = availableInstitutions.filter(inst =>
+      inst.name.toLowerCase().includes(query.toLowerCase()) ||
+      (inst.type === "university" ? "universidad" : "colegio").includes(query.toLowerCase())
+    );
+  
+    return filtered;
   };
 
   if (isLoading) {
@@ -164,30 +191,55 @@ const LoginPage = () => {
                       Error al cargar instituciones. Por favor, recarga la página.
                     </p>
                   </div>
+                ) : institutions && institutions.length > 0 ? (
+                  <AsyncSelect
+                    fetcher={fetchInstitutions}
+                    renderOption={(inst) => (
+                      <div className="w-full flex items-center gap-2 border rounded-lg px-3 py-2 bg-white">
+                        <Building2 className="w-4 h-4 text-gray-500" />
+                        <div className="flex flex-col">
+                          <div className="font-medium">{inst.name}</div>
+                          <div className="text-xs text-gray-500">
+                            {inst.type === "university" ? "Universidad" : "Colegio"}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+      
+                    getOptionValue={(inst) => inst._id}
+      
+                    getDisplayValue={(inst) => (
+                    <div className="flex items-center gap-2 text-left">
+                      <Building2 className="w-4 h-4 text-gray-500" />
+                      <div className="flex flex-col leading-tight">
+                        <span style={{color:"#000000"}} className="font-medium text-sm">{inst.name}</span>
+                        <span className="text-xs text-gray-500">
+                          {inst.type === "university" ? "Universidad" : "Colegio"}
+                        </span>
+                      </div>
+                    </div>
+                    )}
+      
+                    notFound={
+                      <div className="py-6 text-center text-sm text-gray-500">
+                        No se encontraron instituciones
+                      </div>
+                    }
+      
+                    label="Institución"
+                    placeholder="Encuentra tu institución"
+                    value={institutionId}
+                    onChange={handleInstitutionChange}
+                    width="100%"
+                    preload={true}
+                    filterFn={(inst, query) =>
+                    inst.name.toLowerCase().includes(query.toLowerCase()) ||
+                    (inst.type === "university" ? "universidad" : "colegio").includes(query.toLowerCase())
+                    }
+                  />
                 ) : (
                   <div className="flex items-center gap-2 border rounded-lg px-3 py-2 bg-white mt-2">
-                    <Building2 className="w-4 h-4 text-gray-500 flex-shrink-0" />
-                    <select
-                      id="institutionId"
-                      name="institutionId"
-                      value={institutionId}
-                      onChange={onChange}
-                      required
-                      className="w-full border-0 focus:ring-0 focus:outline-none bg-transparent text-black"
-                    >
-                      <option value="">Instituciones</option>
-                      {institutions && institutions.length > 0 ? (
-                        institutions.map((inst) => (
-                          <option key={inst._id} value={inst._id}>
-                            {inst.name} ({inst.type === "university" ? "Universidad" : "Colegio"})
-                          </option>
-                        ))
-                      ) : (
-                        <option value="" disabled>
-                          No hay instituciones disponibles
-                        </option>
-                      )}
-                    </select>
+                    <p className="text-sm text-gray-500">No hay instituciones disponibles</p>
                   </div>
                 )}
               </div>

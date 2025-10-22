@@ -17,6 +17,7 @@ import {
   PopoverTrigger,
 } from "../../components/ui/popover";
 import { Input } from "../../components/ui/input";
+import { color } from "framer-motion";
 
 export function AsyncSelect(
   {
@@ -102,30 +103,34 @@ export function AsyncSelect(
           role="combobox"
           aria-expanded={open}
           className={cn(
-            "justify-between",
+            "justify-between bg-white hover:bg-white h-auto py-2",
             disabled && "opacity-50 cursor-not-allowed",
             triggerClassName
           )}
-          style={{ width: width }}
+          style={{ width: width, color: "#000000" }}
           disabled={disabled}>
           {selectedOption ? (
             getDisplayValue(selectedOption)
           ) : (
-            placeholder
+            <span className="text-gray-400 text-sm">{placeholder}</span>
           )}
           <ChevronsUpDown className="opacity-50" size={10} />
         </Button>
       </PopoverTrigger>
-      <PopoverContent style={{ width: width }} className={cn("p-0", className)}>
-        <Command>
-          <div className="relative border-b w-full">
+      <PopoverContent 
+        align="start"
+        className={cn("p-0 bg-white", className)}
+        style={{ width: 'var(--radix-popover-trigger-width)' }}
+      >
+        <Command className="bg-white">
+          <div className="relative border-b w-full bg-white">
             <Search
               className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder={`Search ${label.toLowerCase()}...`}
+              placeholder={`Busca tu ${label.toLowerCase()}...`}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="focus-visible:ring-0 rounded-b-none border-none pl-8 flex-1" />
+              className="focus-visible:ring-0 rounded-b-none border-none pl-8 flex-1 bg-white w-full" />
             {loading && options.length > 0 && (
               <div
                 className="absolute right-2 top-1/2 transform -translate-y-1/2 flex items-center">
@@ -133,7 +138,7 @@ export function AsyncSelect(
               </div>
             )}
           </div>
-          <CommandList>
+          <CommandList className="bg-white">
             {error && (
               <div className="p-4 text-destructive text-center">
                 {error}
@@ -143,20 +148,23 @@ export function AsyncSelect(
               loadingSkeleton || <DefaultLoadingSkeleton />
             )}
             {!loading && !error && options.length === 0 && (
-              notFound || <CommandEmpty>{noResultsMessage ?? `No ${label.toLowerCase()} found.`}</CommandEmpty>
+              notFound || <CommandEmpty>{noResultsMessage ?? `No se encontro ninguna ${label.toLowerCase()}.`}</CommandEmpty>
             )}
             <CommandGroup>
               {options.map((option) => (
                 <CommandItem
                   key={getOptionValue(option)}
                   value={getOptionValue(option)}
-                  onSelect={handleSelect}>
-                  {renderOption(option)}
-                  <Check
-                    className={cn(
-                      "ml-auto h-3 w-3",
-                      selectedValue === getOptionValue(option) ? "opacity-100" : "opacity-0"
-                    )} />
+                  onSelect={handleSelect}
+                  className="w-full cursor-pointer px-0">
+                  <div className="flex items-center justify-between w-full px-2">
+                    {renderOption(option)}
+                    <Check
+                      className={cn(
+                        "ml-auto h-3 w-3 flex-shrink-0",
+                        selectedValue === getOptionValue(option) ? "opacity-100" : "opacity-0"
+                      )} />
+                  </div>
                 </CommandItem>
               ))}
             </CommandGroup>

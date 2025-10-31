@@ -6,8 +6,8 @@ const user = JSON.parse(localStorage.getItem("user"));
 
 const initialState = {
   user: user ? user : null,
-  institutions: [], // Un nuevo estado para guardar la lista de instituciones
-  isLoadingInstitutions: false, // Para mostrar un spinner mientras se cargan
+  institutions: [],
+  isLoadingInstitutions: false,
   isError: false,
   isSuccess: false,
   isLoading: false,
@@ -29,12 +29,9 @@ export const getInstitutions = createAsyncThunk(
 // Acción Asíncrona para Registrar Usuario (Thunk)
 export const register = createAsyncThunk(
   "auth/register",
-  // Ahora el thunk acepta un objeto con los datos del usuario a crear
   async (userData, thunkAPI) => {
     try {
-      // Obtenemos el token del admin que está realizando la acción
       const token = thunkAPI.getState().auth.user.token;
-      // El servicio se encargará de pasar el token en la cabecera
       return await authService.register(userData, token);
     } catch (error) {
       const message =
@@ -82,7 +79,7 @@ export const authSlice = createSlice({
       })
       .addCase(getInstitutions.rejected, (state, action) => {
         state.isLoadingInstitutions = false;
-        state.message = action.payload; // Guardamos el mensaje de error
+        state.message = action.payload;
       })
       .addCase(register.pending, (state) => {
         state.isLoading = true;
@@ -90,13 +87,14 @@ export const authSlice = createSlice({
       .addCase(register.fulfilled, (state, action) => {
         state.isLoading = false;
         state.isSuccess = true;
-        state.user = action.payload;
+        // ✅ NO actualizar state.user - mantener el usuario admin logueado
+        // El nuevo usuario creado se retorna en action.payload pero NO se guarda en el state
       })
       .addCase(register.rejected, (state, action) => {
         state.isLoading = false;
         state.isError = true;
         state.message = action.payload;
-        state.user = null;
+        // ✅ NO poner state.user = null aquí tampoco
       })
       .addCase(login.pending, (state) => {
         state.isLoading = true;
@@ -104,7 +102,7 @@ export const authSlice = createSlice({
       .addCase(login.fulfilled, (state, action) => {
         state.isLoading = false;
         state.isSuccess = true;
-        state.user = action.payload;
+        state.user = action.payload; // ✅ Solo aquí se actualiza el usuario (al hacer login)
       })
       .addCase(login.rejected, (state, action) => {
         state.isLoading = false;

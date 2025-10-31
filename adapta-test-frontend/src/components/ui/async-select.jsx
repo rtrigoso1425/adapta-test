@@ -71,12 +71,14 @@ export function AsyncSelect(
         setLoading(false);
       }
     };
- 
-    if (!mounted) {
+
+    if (preload && !mounted) {
       fetchOptions();
-    } else if (!preload && debouncedSearchTerm) {
+    } 
+    else if (!preload && debouncedSearchTerm) {
       fetchOptions();
-    } else if (preload) {
+    } 
+    else if (preload && mounted) {
       if (debouncedSearchTerm) {
         setOptions(
           originalOptions.filter((option) => filterFn ? filterFn(option, debouncedSearchTerm) : true)

@@ -1,10 +1,22 @@
-
 import { useEffect, useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { BlurFade } from "../../components/ui/blur-fade";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
-import { User, Mail, Lock, GraduationCap, ShieldUser, X, Plus } from "lucide-react";
+import { TagsSelector } from "../../components/ui/tags-selector";
+import { User,
+  Mail, 
+  Lock, 
+  GraduationCap, 
+  Book, 
+  X, 
+  Plus, 
+  FileText, 
+  Timer, 
+  BookPlus, 
+  CircleUserRound,
+  LibraryBig,
+} from "lucide-react";
 import axios from "axios";
 import { register, reset as resetAuth } from "../auth/authSlice";
 import { Typewriter } from "../../components/ui/typewriter-text";
@@ -12,6 +24,7 @@ import { Label } from "../../components/ui/label";
 import { Input } from "../../components/ui/input";
 import { Button } from "../../components/ui/button";
 import { AsyncSelect } from "../../components/ui/async-select";
+import { SelectNative } from "../../components/ui/select-native";
 import {
   getUsers,
   getCoordinators,
@@ -82,40 +95,65 @@ const AssignCoordinatorModal = ({ career, onClose }) => {
   };
 
   return (
-    <div style={modalStyles.modal}>
-      <h2>Asignar Coordinador a: {career.name}</h2>
-      {isLoading ? (
-        <p>Cargando coordinadores...</p>
-      ) : (
-        <form onSubmit={onSubmit}>
-          <select
-            value={selectedCoordinator}
-            onChange={(e) => setSelectedCoordinator(e.target.value)}
-            required
-            style={{ width: "100%", padding: "10px", marginBottom: "20px" }}
-          >
-            <option value="">-- Selecciona un coordinador --</option>
-            {coordinators.map((c) => (
-              <option key={c._id} value={c._id}>
-                {c.name} ({c.email})
-              </option>
-            ))}
-          </select>
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "flex-end",
-              gap: "10px",
-            }}
-          >
-            <button type="button" onClick={onClose}>
-              Cancelar
-            </button>
-            <button type="submit">Asignar</button>
-          </div>
-        </form>
-      )}
-    </div>
+    <ModalOverlay isOpen={true} onClose={onClose}>
+      <BlurFade inView delay={0.1}>
+        <Card className="w-full max-w-md shadow-xl rounded-3xl border-0 bg-white">
+          <CardHeader className="space-y-2 pb-4">
+            <CardTitle className="text-2xl font-semibold text-center text-gray-900">
+              Asignar Coordinador
+            </CardTitle>
+            <p className="text-sm text-center text-gray-500 mt-1">
+              {career.name}
+            </p>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {isLoading ? (
+              <p className="text-center text-gray-600">Cargando coordinadores...</p>
+            ) : (
+              <form onSubmit={onSubmit} className="space-y-4">
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-gray-700">
+                    Selecciona un Coordinador
+                  </Label>
+                  <div className="flex items-center gap-2 border border-gray-300 rounded-lg px-3 py-2.5 bg-white focus-within:ring-2 focus-within:ring-gray-200">
+                    <User className="w-5 h-5 text-gray-400" />
+                    <SelectNative
+                      value={selectedCoordinator}
+                      onChange={(e) => setSelectedCoordinator(e.target.value)}
+                      required
+                      className="w-full border-0 focus-visible:ring-0 focus-visible:outline-none shadow-none text-black"
+                    >
+                      <option value="">-- Selecciona un coordinador --</option>
+                      {coordinators.map((c) => (
+                        <option key={c._id} value={c._id}>
+                          {c.name} ({c.email})
+                        </option>
+                      ))}
+                    </SelectNative>
+                  </div>
+                </div>
+
+                <div className="flex justify-end gap-3 mt-6">
+                  <Button
+                    type="button"
+                    onClick={onClose}
+                    className="px-6 py-2 rounded-lg text-gray-700 bg-gray-200 hover:bg-gray-300 font-medium transition-colors"
+                  >
+                    Cancelar
+                  </Button>
+                  <Button
+                    type="submit"
+                    className="px-6 py-2 rounded-lg text-white bg-black hover:bg-gray-800 font-medium shadow-md transition-colors"
+                  >
+                    Asignar
+                  </Button>
+                </div>
+              </form>
+            )}
+          </CardContent>
+        </Card>
+      </BlurFade>
+    </ModalOverlay>
   );
 };
 
@@ -208,7 +246,7 @@ const CareerManagementTab = ({ careers, onAssignCoordinatorClick }) => {
                       onChange={(e) => setName(e.target.value)}
                       placeholder="Ingrese Nombre de la Carrera"
                       required
-                      className="border-0 focus-visible:ring-0 focus-visible:ring-offset-0"
+                      className="w-full border-0 focus-visible:ring-0 focus-visible:outline-none shadow-none text-black"
                     />
                   </div>
                 </div>
@@ -218,13 +256,13 @@ const CareerManagementTab = ({ careers, onAssignCoordinatorClick }) => {
                     Descripción
                   </Label>
                   <div className="flex items-start gap-2 border border-gray-300 rounded-lg px-3 py-2.5 bg-white focus-within:ring-2 focus-within:ring-gray-200">
-                    <GraduationCap className="w-5 h-5 text-gray-400 mt-1" />
+                    <FileText className="w-5 h-5 text-gray-400 mt-1" />
                     <textarea
                       value={description}
                       onChange={(e) => setDescription(e.target.value)}
                       placeholder="Ingrese la Descripción"
                       required
-                      className="w-full border-0 bg-transparent focus:outline-none focus:ring-0 resize-none"
+                      className="w-full border-0 bg-transparent focus:outline-none focus:ring-0 resize-none text-black"
                       rows={3}
                     />
                   </div>
@@ -235,14 +273,14 @@ const CareerManagementTab = ({ careers, onAssignCoordinatorClick }) => {
                     Duración
                   </Label>
                   <div className="flex items-center gap-2 border border-gray-300 rounded-lg px-3 py-2.5 bg-white focus-within:ring-2 focus-within:ring-gray-200">
-                    <GraduationCap className="w-5 h-5 text-gray-400" />
+                    <Timer className="w-5 h-5 text-gray-400" />
                     <Input
                       type="text"
                       value={duration}
                       onChange={(e) => setDuration(e.target.value)}
                       placeholder="Ingrese la Duración (ej. 10 Ciclos)"
                       required
-                      className="border-0 focus-visible:ring-0 focus-visible:ring-offset-0"
+                      className="w-full border-0 focus-visible:ring-0 focus-visible:outline-none shadow-none text-black"
                     />
                   </div>
                 </div>
@@ -252,14 +290,14 @@ const CareerManagementTab = ({ careers, onAssignCoordinatorClick }) => {
                     Grados
                   </Label>
                   <div className="flex items-center gap-2 border border-gray-300 rounded-lg px-3 py-2.5 bg-white focus-within:ring-2 focus-within:ring-gray-200">
-                    <GraduationCap className="w-5 h-5 text-gray-400" />
+                    <BookPlus className="w-5 h-5 text-gray-400" />
                     <Input
                       type="text"
                       value={degrees}
                       onChange={(e) => setDegrees(e.target.value)}
                       placeholder="Ingrese los Grados (separados por comas)"
                       required
-                      className="border-0 focus-visible:ring-0 focus-visible:ring-offset-0"
+                      className="w-full border-0 focus-visible:ring-0 focus-visible:outline-none shadow-none text-black"
                     />
                   </div>
                 </div>
@@ -286,11 +324,12 @@ const CourseManagementTab = ({ courses }) => {
   const [description, setDescription] = useState("");
   const [prerequisites, setPrerequisites] = useState([]);
 
-  const handlePrerequisitesChange = (e) => {
-    const selectedIds = Array.from(
-      e.target.selectedOptions,
-      (option) => option.value
-    );
+  const courseTags = courses.map((course) => ({
+    id: course._id,
+    label: course.title
+  }));
+
+  const handlePrerequisitesChange = (selectedIds) => {
     setPrerequisites(selectedIds);
   };
 
@@ -326,49 +365,64 @@ const CourseManagementTab = ({ courses }) => {
       ))}
 
       <ModalOverlay isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
-        <div style={styles.formContainer}>
-          <h3>Crear Nuevo Curso</h3>
-          <form onSubmit={handleCreateCourse}>
-            <div style={styles.formGroup}>
-              <input
-                type="text"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="Título del Curso"
-                required
-                style={styles.input}
-              />
-            </div>
-            <div style={styles.formGroup}>
-              <textarea
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Descripción"
-                required
-                style={{ ...styles.input, height: "80px" }}
-              />
-            </div>
-            <div style={styles.formGroup}>
-              <label>
-                Prerrequisitos (mantén Ctrl o Cmd para seleccionar varios):
-              </label>
-              <br />
-              <select
-                multiple={true}
-                value={prerequisites}
-                onChange={handlePrerequisitesChange}
-                style={{ ...styles.input, height: "150px" }}
-              >
-                {courses.map((course) => (
-                  <option key={course._id} value={course._id}>
-                    {course.title}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <button type="submit">Crear Curso</button>
-          </form>
-        </div>
+        <BlurFade inView delay={0.1}>
+          <Card className="w-full max-w-md shadow-xl rounded-3xl border-0 bg-white">
+            <CardHeader className="space-y-2 pb-4">
+              <CardTitle className="text-2xl font-semibold text-center text-gray-900">
+                <Typewriter text={["Crear Nuevo Curso"]} speed={150} />
+              </CardTitle>
+              <p className="text-sm text-center text-gray-500 mt-1">
+                Completa el formulario para crear un nuevo curso
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <form onSubmit={handleCreateCourse} className="space-y-4">
+                <Label className="text-black">Titulo del Curso</Label>
+                <div className="flex items-center gap-2 border rounded-lg px-3 py-2 bg-white">
+                  <Book className="w-5 h-5 text-gray-400 mt-1"/>
+                  <Input
+                    type="text"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    placeholder="Título del Curso"
+                    required
+                    className="w-full border-0 focus-visible:ring-0 focus-visible:outline-none shadow-none text-black"
+                  />
+                </div>
+                
+                <Label className="text-black">Descripcion del Curso</Label>
+                <div className="flex items-center gap-2 border rounded-lg px-3 py-2 bg-white">
+                  <FileText className="w-5 h-5 text-gray-400 mt-1"/>
+                  <textarea
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    placeholder="Descripción"
+                    required
+                    className="w-full border-0 bg-transparent focus:outline-none focus:ring-0 resize-none text-black"
+                  />
+                </div>
+                
+                <Label className="text-black">Prerrequisitos</Label>
+                <div className="flex items-start gap-2 border rounded-lg px-3 py-2 bg-white min-h-[100px]">
+                  <LibraryBig className="w-5 h-5 text-gray-400 mt-1 flex-shrink-0"/>
+                  <div className="w-full">
+                    <TagsSelector 
+                      tags={courseTags}
+                      value={prerequisites}
+                      onChange={handlePrerequisitesChange}
+                      placeholder="Selecciona los cursos prerequisitos"
+                      className="w-full border-0 focus-visible:ring-0 focus-visible:outline-none shadow-none text-black"
+                    />
+                  </div>
+                </div>
+                
+                <Button type="submit" className="w-full rounded-xl hover:cursor-pointer text-white bg-black font-medium shadow-md disabled:opacity-50 disabled:cursor-not-allowed">
+                  Crear Curso
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+        </BlurFade>
       </ModalOverlay>
     </section>
   );
@@ -480,81 +534,104 @@ const AcademicManagementTab = ({ courses, professors, cycles }) => {
       </ModalOverlay>
 
       <ModalOverlay isOpen={isSectionModalOpen} onClose={() => setIsSectionModalOpen(false)}>
-        <div style={styles.formContainer}>
-          <h3>Crear Nueva Sección</h3>
-          <form onSubmit={handleCreateSection}>
-            <div style={styles.formGroup}>
-              <label>Curso:</label>
-              <select
-                value={selectedCourse}
-                onChange={(e) => setSelectedCourse(e.target.value)}
-                required
-                style={styles.input}
-              >
-                <option value="">-- Selecciona --</option>
-                {courses.map((c) => (
-                  <option key={c._id} value={c._id}>
-                    {c.title}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div style={styles.formGroup}>
-              <label>Profesor:</label>
-              <select
-                value={selectedProfessor}
-                onChange={(e) => setSelectedProfessor(e.target.value)}
-                required
-                style={styles.input}
-              >
-                <option value="">-- Selecciona --</option>
-                {professors.map((p) => (
-                  <option key={p._id} value={p._id}>
-                    {p.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div style={styles.formGroup}>
-              <label>Ciclo Académico:</label>
-              <select
-                value={selectedCycle}
-                onChange={(e) => setSelectedCycle(e.target.value)}
-                required
-                style={styles.input}
-              >
-                <option value="">-- Selecciona --</option>
-                {cycles.map((c) => (
-                  <option key={c._id} value={c._id}>
-                    {c.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div style={styles.formGroup}>
-              <label>Código de Sección (ej. G1):</label>
-              <input
-                type="text"
-                value={sectionCode}
-                onChange={(e) => setSectionCode(e.target.value)}
-                required
-                style={styles.input}
-              />
-            </div>
-            <div style={styles.formGroup}>
-              <label>Capacidad:</label>
-              <input
-                type="number"
-                min="1"
-                value={capacity}
-                onChange={(e) => setCapacity(e.target.value)}
-                required
-                style={styles.input}
-              />
-            </div>
-            <button type="submit">Crear Sección</button>
-          </form>
-        </div>
+        <BlurFade inView delay={0.1}>
+          <Card className="w-full max-w-md shadow-xl rounded-3xl border-0 bg-white">
+            <CardHeader className="space-y-2 pb-4">
+              <CardTitle className="text-2xl font-semibold text-center text-gray-900">
+                <Typewriter text={["Crear Nueva Seccion"]} speed={150} />
+              </CardTitle>
+              <p className="text-sm text-center text-gray-500 mt-1">
+                Completa el formulario para crear una nueva sección
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <form onSubmit={handleCreateSection} className="space-y-4">
+                <Label className="text-sm font-medium text-gray-700">
+                  Curso:
+                </Label>
+                <div className="flex items-center gap-2 border border-gray-300 rounded-lg px-3 py-2.5 bg-white focus-within:ring-2 focus-within:ring-gray-200">
+                  <SelectNative
+                    value={selectedCourse}
+                    onChange={(e) => setSelectedCourse(e.target.value)}
+                    required
+                    className="w-full border-0 focus-visible:ring-0 focus-visible:outline-none shadow-none text-black"
+                  >
+                    <option value="">-- Selecciona --</option>
+                    {courses.map((c) => (
+                      <option key={c._id} value={c._id}>
+                        {c.title}
+                      </option>
+                    ))}
+                  </SelectNative>
+                </div>
+                <Label className="text-sm font-medium text-gray-700">
+                  Profesor:
+                </Label>
+                <div className="flex items-center gap-2 border border-gray-300 rounded-lg px-3 py-2.5 bg-white focus-within:ring-2 focus-within:ring-gray-200">
+                  <SelectNative
+                    value={selectedProfessor}
+                    onChange={(e) => setSelectedProfessor(e.target.value)}
+                    required
+                    className="w-full border-0 focus-visible:ring-0 focus-visible:outline-none shadow-none text-black"
+                  >
+                    <option value="">-- Selecciona --</option>
+                    {professors.map((p) => (
+                      <option key={p._id} value={p._id}>
+                        {p.name}
+                      </option>
+                    ))}
+                  </SelectNative>
+                </div>
+                <Label className="text-sm font-medium text-gray-700">
+                  Ciclo Academico:
+                </Label>
+                <div className="flex items-center gap-2 border border-gray-300 rounded-lg px-3 py-2.5 bg-white focus-within:ring-2 focus-within:ring-gray-200">
+                  <SelectNative
+                    value={selectedCycle}
+                    onChange={(e) => setSelectedCycle(e.target.value)}
+                    required
+                    className="w-full border-0 focus-visible:ring-0 focus-visible:outline-none shadow-none text-black"
+                  >
+                    <option value="">-- Selecciona --</option>
+                    {cycles.map((c) => (
+                      <option key={c._id} value={c._id}>
+                        {c.name}
+                      </option>
+                    ))}
+                  </SelectNative>
+                </div>
+                <Label className="text-sm font-medium text-gray-700">
+                  Código de Sección
+                </Label>
+                <div className="flex items-center gap-2 border border-gray-300 rounded-lg px-3 py-2.5 bg-white focus-within:ring-2 focus-within:ring-gray-200">
+                  <Input
+                    type="text"
+                    value={sectionCode}
+                    onChange={(e) => setSectionCode(e.target.value)}
+                    required
+                    className="w-full border-0 focus-visible:ring-0 focus-visible:outline-none shadow-none text-black"
+                  />
+                </div>
+                <Label className="text-sm font-medium text-gray-700">
+                  Capacidad:
+                </Label>
+                <div className="flex items-center gap-2 border border-gray-300 rounded-lg px-3 py-2.5 bg-white focus-within:ring-2 focus-within:ring-gray-200">
+                  <Input
+                    type="number"
+                    min="1"
+                    value={capacity}
+                    onChange={(e) => setCapacity(e.target.value)}
+                    required
+                    className="w-full border-0 focus-visible:ring-0 focus-visible:outline-none shadow-none text-black"
+                  />
+                </div>
+                <Button type="submit" className="w-full mt-6 py-3 rounded-lg hover:cursor-pointer text-white bg-black hover:bg-gray-800 font-medium shadow-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                  Crear Sección
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+        </BlurFade>
       </ModalOverlay>
     </section>
   );
@@ -595,7 +672,6 @@ const UserManagementTab = () => {
     institutionType === "university"
       ? ["student", "professor", "coordinator", "admin"]
       : ["student", "professor", "parent", "admin"];
-
   return (
     <section>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
@@ -647,7 +723,7 @@ const UserManagementTab = () => {
                       onChange={onChange}
                       placeholder="Ingrese el Nombre completo"
                       required
-                      className="border-0 focus-visible:ring-0 focus-visible:ring-offset-0"
+                      className="w-full border-0 focus-visible:ring-0 focus-visible:outline-none shadow-none text-black"
                     />
                   </div>
                 </div>
@@ -665,7 +741,7 @@ const UserManagementTab = () => {
                       onChange={onChange}
                       placeholder="Ingrese el Correo electrónico"
                       required
-                      className="border-0 focus-visible:ring-0 focus-visible:ring-offset-0"
+                      className="w-full border-0 focus-visible:ring-0 focus-visible:outline-none shadow-none text-black"
                     />
                   </div>
                 </div>
@@ -683,21 +759,20 @@ const UserManagementTab = () => {
                       onChange={onChange}
                       placeholder="Ingrese la Contraseña temporal"
                       required
-                      className="border-0 focus-visible:ring-0 focus-visible:ring-offset-0"
+                      className="w-full border-0 focus-visible:ring-0 focus-visible:outline-none shadow-none text-black"
                     />
                   </div>
                 </div>
-
                 <div className="space-y-2">
                   <Label className="text-sm font-medium text-gray-700">Rol</Label>
                   <div className="flex items-center gap-2 border border-gray-300 rounded-lg px-3 py-2.5 bg-white focus-within:ring-2 focus-within:ring-gray-200">
-                    <ShieldUser className="w-5 h-5 text-gray-400" />
-                    <select
+                    <CircleUserRound className="w-5 h-5 text-gray-400"/>
+                    <SelectNative
                       name="role"
                       value={role}
                       onChange={onChange}
                       required
-                      className="w-full border-0 bg-transparent focus:outline-none focus:ring-0"
+                      className="w-full border-0 focus-visible:ring-0 focus-visible:outline-none shadow-none text-black"
                     >
                       <option value="" disabled>
                         -- Selecciona un rol --
@@ -707,7 +782,7 @@ const UserManagementTab = () => {
                           {r}
                         </option>
                       ))}
-                    </select>
+                    </SelectNative>
                   </div>
                 </div>
 

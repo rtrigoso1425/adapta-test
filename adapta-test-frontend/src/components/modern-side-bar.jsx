@@ -12,7 +12,6 @@ import {
   X, 
   ChevronLeft, 
   ChevronRight,
-  BarChart3,
   FileText,
   Bell,
   GraduationCap,
@@ -37,6 +36,7 @@ export function Sidebar({
   const [activeItem, setActiveItem] = useState("users");
 
   // Definir navigationItems DENTRO del componente para tener acceso a 'user'
+  console.log(user);
   const navigationItems = [
     { id: "users", name: "Gestion de Usuarios", icon: Home, href: "/dashboard?tab=users" },
     ...(user.institution.type === "university" 

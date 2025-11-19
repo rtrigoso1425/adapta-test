@@ -1,4 +1,6 @@
-import { Routes, Route, useLocation } from "react-router-dom";
+import React from "react";
+import { Routes, Route, useLocation, Navigate } from "react-router-dom";
+import { useSelector } from "react-redux";
 import Header from "./components/Header";
 import HomePage from "./pages/HomePage";
 import LoginPage from "./pages/LoginPage";
@@ -15,10 +17,28 @@ import { Sidebar } from "./components/modern-side-bar";
 
 function App() {
   const location = useLocation();
-  const ShowHeaderRoutes = ['/'];
-  const shouldShowHeader = ShowHeaderRoutes.includes(location.pathname);
-  const CantShowSliderbarRoutes = ['/',`/login`];
-  const ShouldntShowSliderbar = CantShowSliderbarRoutes.includes(location.pathname);
+   const { user } = useSelector((state) => state.auth || {});
+   const ShowHeaderRoutes = ['/'];
+   const shouldShowHeader = ShowHeaderRoutes.includes(location.pathname);
+   const CantShowSliderbarRoutes = ['/',`/login`];
+   const ShouldntShowSliderbar = CantShowSliderbarRoutes.includes(location.pathname);
+  
+  // Redirección inmediata: si la ruta actual es protegida y no hay usuario,
+  // devolver <Navigate /> antes de renderizar el layout (evita render parcial y errores).
+  const protectedPrefixes = [
+    "/dashboard",
+    "/courses",
+    "/manage",
+    "/learn",
+    "/modules",
+    "/career"
+  ];
+  const isProtectedPath = protectedPrefixes.some((p) =>
+    location.pathname === p || location.pathname.startsWith(p + "/") || location.pathname.startsWith(p)
+  );
+  if (isProtectedPath && (!user || !user.token)) {
+    return <Navigate to="/login" replace />;
+  }
   
   return (
     <div className="bg-black text-white w-full min-h-screen relative max-w-screen overflow-x-hidden font-sans">

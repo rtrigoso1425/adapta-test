@@ -1,12 +1,18 @@
-import { Navigate, Outlet } from 'react-router-dom';
-import { useSelector } from 'react-redux';
+import React from "react";
+import { useSelector } from "react-redux";
+import { Navigate, Outlet, useLocation } from "react-router-dom";
 
-const PrivateRoute = () => {
-    const { user } = useSelector((state) => state.auth);
+/**
+ * PrivateRoute protege rutas anidadas.
+ * Si no hay usuario (o token) redirige a /login y pasa la ruta origen en state.from
+ */
+export default function PrivateRoute() {
+  const { user } = useSelector((state) => state.auth || {});
+  const location = useLocation();
 
-    // Si el usuario está logueado, muestra el contenido de la ruta (a través de Outlet).
-    // Si no, lo redirige a la página de login.
-    return user ? <Outlet /> : <Navigate to="/login" replace />;
-};
+  if (!user || !user.token) {
+    return <Navigate to="/login" state={{ from: location }} replace />;
+  }
 
-export default PrivateRoute;
+  return <Outlet />;
+}

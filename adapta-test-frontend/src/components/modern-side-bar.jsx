@@ -4,7 +4,8 @@ import { useSelector, useDispatch } from "react-redux"
 import { logout, reset } from '../features/auth/authSlice';
 import React, { useState, useEffect } from 'react';
 import { 
-  Home, 
+  Home,
+  BookPlus, 
   User, 
   Settings, 
   LogOut, 
@@ -15,6 +16,7 @@ import {
   FileText,
   Bell,
   GraduationCap,
+  Book
 } from 'lucide-react';
 
 export function Sidebar({
@@ -35,19 +37,61 @@ export function Sidebar({
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [activeItem, setActiveItem] = useState("users");
 
-  // Definir navigationItems DENTRO del componente para tener acceso a 'user'
-  console.log(user);
-  const navigationItems = [
-    { id: "users", name: "Gestion de Usuarios", icon: Home, href: "/dashboard?tab=users" },
-    ...(user.institution.type === "university" 
+  // Definir navigationItems por rol
+  const adminItems = [
+    { id: "users", name: "Gestion de Usuarios", icon: User, href: "/dashboard?tab=users" },
+    ...(user?.institution?.type === "university" 
       ? [{ id: "careers", name: "Gestion de Carreras", icon: GraduationCap, href: "/dashboard?tab=careers" }]
       : []
     ),
     { id: "courses", name: "Gestion de Cursos", icon: FileText, href: "/dashboard?tab=courses" },
-    { id: "academic", name: "Gestion Académica", icon: Bell, href: "/dashboard?tab=academic" },
+    { id: "academic", name: "Gestion Académica", icon: BookPlus, href: "/dashboard?tab=academic" },
+  ];
+
+  const professorItems = [
+    { id: "courses", name: "Mis Cursos", icon: FileText, href: "/courses" },
     { id: "profile", name: "Profile", icon: User, href: "/profile" },
     { id: "settings", name: "Settings", icon: Settings, href: "/settings" },
   ];
+
+  const studentItems = [
+    { id: "courses", name: "Mis Cursos", icon: Book, href: "/courses" },
+    { id: "profile", name: "Profile", icon: User, href: "/profile" },
+    { id: "settings", name: "Settings", icon: Settings, href: "/settings" },
+  ];
+
+  const coordinatorItems = [
+    { id: "careers", name: "Carreras", icon: GraduationCap, href: "/dashboard?tab=careers" },
+    { id: "courses", name: "Cursos", icon: FileText, href: "/courses" },
+    { id: "profile", name: "Profile", icon: User, href: "/profile" },
+    { id: "settings", name: "Settings", icon: Settings, href: "/settings" },
+  ];
+
+  const parentItems = [
+    { id: "courses", name: "Cursos", icon: FileText, href: "/courses" },
+    { id: "profile", name: "Profile", icon: User, href: "/profile" },
+    { id: "settings", name: "Settings", icon: Settings, href: "/settings" },
+  ];
+
+  // Seleccionar navigationItems según rol
+  const getNavigationByRole = (role) => {
+    switch (role) {
+      case "admin":
+        return adminItems;
+      case "professor":
+        return professorItems;
+      case "student":
+        return studentItems;
+      case "coordinator":
+        return coordinatorItems;
+      case "parent":
+        return parentItems;
+      default:
+        return studentItems;
+    }
+  };
+
+  const navigationItems = getNavigationByRole(user?.role);
 
   // Detectar el tab activo desde la URL
   useEffect(() => {

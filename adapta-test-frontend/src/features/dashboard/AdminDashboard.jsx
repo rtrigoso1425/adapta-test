@@ -4,6 +4,7 @@ import { Link, useNavigate, useLocation } from "react-router-dom";
 import { BlurFade } from "../../components/ui/blur-fade";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
 import { TagsSelector } from "../../components/ui/tags-selector";
+import { DatePicker } from "../../components/ui/date-picker";
 import { User,
   Mail, 
   Lock, 
@@ -16,6 +17,7 @@ import { User,
   BookPlus, 
   CircleUserRound,
   LibraryBig,
+  UserCog,
 } from "lucide-react";
 import axios from "axios";
 import { register, reset as resetAuth } from "../auth/authSlice";
@@ -23,8 +25,13 @@ import { Typewriter } from "../../components/ui/typewriter-text";
 import { Label } from "../../components/ui/label";
 import { Input } from "../../components/ui/input";
 import { Button } from "../../components/ui/button";
-import { AsyncSelect } from "../../components/ui/async-select";
+import { HoverButton } from "../../components/ui/hover-button";
 import { SelectNative } from "../../components/ui/select-native";
+import AdminUsersTable from "../../components/AdminUsersTable";
+import AdminCoursesTable from "../../components/AdminCoursesTable";
+import AdminCyclesTable from "../../components/AdminCyclesTable";
+import { Component as BauhausCard } from "../../components/bauhaus-card";
+
 import {
   getUsers,
   getCoordinators,
@@ -181,7 +188,14 @@ const CareerManagementTab = ({ careers, onAssignCoordinatorClick }) => {
   return (
     <section>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-        <h2>Lista de Carreras</h2>
+        <div style={{ marginTop: '10px'}} className="flex items-start gap-3">
+          <div className="bg-white/10 p-2.5 rounded-lg backdrop-blur-sm">
+            <GraduationCap className="w-6 h-6" />
+          </div>
+          <div className="flex-1">
+            <h1 className="text-2xl font-bold mb-2">Lista de Carreras</h1>
+          </div>
+        </div>
         <Button
           onClick={() => setIsModalOpen(true)}
           className="flex items-center gap-2 bg-black text-white px-4 py-2 rounded-lg hover:bg-gray-800"
@@ -191,35 +205,30 @@ const CareerManagementTab = ({ careers, onAssignCoordinatorClick }) => {
         </Button>
       </div>
 
-      {careers.map((career) => (
-        <div key={career._id} style={styles.card}>
-          <h3>{career.name}</h3>
-          <p>{career.description}</p>
-          <p>
-            <strong>Duración:</strong> {career.duration}
-          </p>
-          <p>
-            <strong>Grados:</strong> {career.degrees.join(", ")}
-          </p>
-          <small>
-            Coordinador:{" "}
-            {career.coordinator ? career.coordinator.name : "No asignado"}
-          </small>
-          <div style={{ marginTop: "15px" }}>
-            <button onClick={() => onAssignCoordinatorClick(career)}>
-              {career.coordinator
-                ? "Cambiar Coordinador"
-                : "Asignar Coordinador"}
-            </button>
-            <Link
-              to={`/career/${career._id}/curriculum`}
-              style={{ marginLeft: "10px" }}
-            >
-              <button>Ver Malla</button>
-            </Link>
+      {/* Grid de tarjetas Bauhaus para cada carrera */}
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+        {careers.map((career) => (
+          <div key={career._id} className="p-2">
+            <BauhausCard
+              id={career._id}
+              topInscription={career.duration || ""}
+              mainText={career.name || "Sin nombre"}
+              subMainText={career.description || ""}
+              filledButtonInscription={career.coordinator ? "Cambiar Coordinador" : "Asignar Coordinador"}
+              outlinedButtonInscription="Ver Malla"
+              onFilledButtonClick={() => onAssignCoordinatorClick(career)}
+              onOutlinedButtonClick={() => { window.location.href = `/career/${career._id}/curriculum`; }}
+              accentColor="#000000ff"
+              backgroundColor="#ffffff"
+              textColorMain="#111827"
+              textColorSub="#4b5563"
+              chronicleButtonBg="#ffffff"
+              chronicleButtonFg="#111827"
+              chronicleButtonHoverFg="#ffffff"
+            />
           </div>
-        </div>
-      ))}
+        ))}
+      </div>
 
       <ModalOverlay isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
         <BlurFade inView delay={0.1}>
@@ -345,7 +354,14 @@ const CourseManagementTab = ({ courses }) => {
   return (
     <section>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-        <h2>Catálogo de Cursos</h2>
+        <div style={{ marginTop: '10px'}} className="flex items-start gap-3">
+          <div className="bg-white/10 p-2.5 rounded-lg backdrop-blur-sm">
+            <FileText className="w-6 h-6" />
+          </div>
+          <div className="flex-1">
+            <h1 className="text-2xl font-bold mb-2">Catálogo de Cursos</h1>
+          </div>
+        </div>
         <Button
           onClick={() => setIsModalOpen(true)}
           className="flex items-center gap-2 bg-black text-white px-4 py-2 rounded-lg hover:bg-gray-800"
@@ -355,14 +371,8 @@ const CourseManagementTab = ({ courses }) => {
         </Button>
       </div>
 
-      {courses.map((course) => (
-        <div key={course._id} style={styles.card}>
-          <p>
-            <strong>{course.title}</strong>
-          </p>
-          <small>ID: {course._id}</small>
-        </div>
-      ))}
+      {/* Usar la tabla de administración de cursos */}
+      <AdminCoursesTable />
 
       <ModalOverlay isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
         <BlurFade inView delay={0.1}>
@@ -389,7 +399,6 @@ const CourseManagementTab = ({ courses }) => {
                     className="w-full border-0 focus-visible:ring-0 focus-visible:outline-none shadow-none text-black"
                   />
                 </div>
-                
                 <Label className="text-black">Descripcion del Curso</Label>
                 <div className="flex items-center gap-2 border rounded-lg px-3 py-2 bg-white">
                   <FileText className="w-5 h-5 text-gray-400 mt-1"/>
@@ -434,7 +443,8 @@ const AcademicManagementTab = ({ courses, professors, cycles }) => {
   const [isSectionModalOpen, setIsSectionModalOpen] = useState(false);
   
   const [cycleName, setCycleName] = useState("");
-  const [startDate, setStartDate] = useState("");
+  // startDate is stored as ISO string (or null) and passed to DatePicker as Date
+  const [startDate, setStartDate] = useState(null);
   const [endDate, setEndDate] = useState("");
 
   const [selectedCourse, setSelectedCourse] = useState("");
@@ -445,6 +455,7 @@ const AcademicManagementTab = ({ courses, professors, cycles }) => {
 
   const handleCreateCycle = (e) => {
     e.preventDefault();
+    // startDate is an ISO string (or null); endDate remains as string from the input
     dispatch(createCycle({ name: cycleName, startDate, endDate }));
     setCycleName("");
     setStartDate("");
@@ -475,7 +486,14 @@ const AcademicManagementTab = ({ courses, professors, cycles }) => {
   return (
     <section>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-        <h2>Gestión de Ciclos y Secciones</h2>
+        <div style={{ marginTop: '10px'}} className="flex items-start gap-3">
+          <div className="bg-white/10 p-2.5 rounded-lg backdrop-blur-sm">
+            <BookPlus className="w-6 h-6" />
+          </div>
+          <div className="flex-1">
+            <h1 className="text-2xl font-bold mb-2">Gestión de Ciclos y Secciones</h1>
+          </div>
+        </div>
         <div style={{ display: 'flex', gap: '10px' }}>
           <Button
             onClick={() => setIsCycleModalOpen(true)}
@@ -494,43 +512,58 @@ const AcademicManagementTab = ({ courses, professors, cycles }) => {
         </div>
       </div>
 
+      {/* Tabla de ciclos académicos */}
+      <h3 style={{ marginTop: '10px', marginBottom: '15px' }}>Ciclos Académicos</h3>
+      <AdminCyclesTable />
       <ModalOverlay isOpen={isCycleModalOpen} onClose={() => setIsCycleModalOpen(false)}>
-        <div style={styles.formContainer}>
-          <h3>Crear Nuevo Ciclo Académico</h3>
-          <form onSubmit={handleCreateCycle}>
-            <div style={styles.formGroup}>
-              <input
-                type="text"
-                value={cycleName}
-                onChange={(e) => setCycleName(e.target.value)}
-                placeholder="Nombre del Ciclo (ej. 2025-II)"
-                required
-                style={styles.input}
-              />
-            </div>
-            <div style={styles.formGroup}>
-              <label>Fecha de Inicio:</label>
-              <input
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                required
-                style={styles.input}
-              />
-            </div>
-            <div style={styles.formGroup}>
-              <label>Fecha de Fin:</label>
-              <input
-                type="date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                required
-                style={styles.input}
-              />
-            </div>
-            <button type="submit">Crear Ciclo</button>
-          </form>
-        </div>
+        <BlurFade inView delay={0.1}>
+          <Card className="w-full max-w-md shadow-xl rounded-3xl border-0 bg-white">
+            <CardHeader className="space-y-2 pb-4">
+              <CardTitle className="text-2xl font-semibold text-center text-gray-900">
+                <Typewriter text={["Crear Nuevo Ciclo"]} speed={150} />
+              </CardTitle>
+              <p className="text-sm text-center text-gray-500 mt-1">
+                Completa el formulario para crear un nuevo ciclo
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <form onSubmit={handleCreateCycle}>
+                <Label className="text-sm font-medium text-gray-700">Nombre del ciclo:</Label>
+                <div className="flex items-center gap-2 border border-gray-300 rounded-lg px-3 py-2.5 bg-white focus-within:ring-2 focus-within:ring-gray-200">
+                  <Input
+                    type="text"
+                    value={cycleName}
+                    onChange={(e) => setCycleName(e.target.value)}
+                    placeholder="Nombre del Ciclo (ej. 2025-II)"
+                    required
+                    className="w-full border-0 focus-visible:ring-0 focus-visible:outline-none shadow-none text-black"
+                  />
+                </div>
+                <Label className="text-sm font-medium text-gray-700">Fecha de Inicio:</Label>
+                <div className="flex items-center gap-2 border border-gray-300 rounded-lg px-3 py-2.5 bg-white focus-within:ring-2 focus-within:ring-gray-200">
+                  <DatePicker
+                    date={startDate ? new Date(startDate) : null}
+                    onDateChange={(date) => setStartDate(date ? date.toISOString() : "")}
+                    required
+                    className="w-full border-0 focus-visible:ring-0 focus-visible:outline-none shadow-none text-black"
+                  />
+                </div>
+                <Label className="text-sm font-medium text-gray-700">Fecha de Fin:</Label>
+                <div className="flex items-center gap-2 border border-gray-300 rounded-lg px-3 py-2.5 bg-white focus-within:ring-2 focus-within:ring-gray-200">
+                   <DatePicker
+                     date={endDate ? new Date(endDate) : null}
+                     onDateChange={(date) => setEndDate(date ? date.toISOString() : "")}
+                     required
+                     className="w-full border-0 focus-visible:ring-0 focus-visible:outline-none shadow-none text-black bg-white"
+                   />
+                 </div>
+                <Button type="submit" className="w-full rounded-xl hover:cursor-pointer text-white bg-black font-medium shadow-md disabled:opacity-50 disabled:cursor-not-allowed">
+                  Crear Ciclo
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+        </BlurFade>
       </ModalOverlay>
 
       <ModalOverlay isOpen={isSectionModalOpen} onClose={() => setIsSectionModalOpen(false)}>
@@ -550,6 +583,7 @@ const AcademicManagementTab = ({ courses, professors, cycles }) => {
                   Curso:
                 </Label>
                 <div className="flex items-center gap-2 border border-gray-300 rounded-lg px-3 py-2.5 bg-white focus-within:ring-2 focus-within:ring-gray-200">
+                  <Book className="w-5 h-5 text-gray-400 mt-1 flex-shrink-0"/>
                   <SelectNative
                     value={selectedCourse}
                     onChange={(e) => setSelectedCourse(e.target.value)}
@@ -568,6 +602,7 @@ const AcademicManagementTab = ({ courses, professors, cycles }) => {
                   Profesor:
                 </Label>
                 <div className="flex items-center gap-2 border border-gray-300 rounded-lg px-3 py-2.5 bg-white focus-within:ring-2 focus-within:ring-gray-200">
+                  <User className="w-5 h-5 text-gray-400 mt-1 flex-shrink-0"/>
                   <SelectNative
                     value={selectedProfessor}
                     onChange={(e) => setSelectedProfessor(e.target.value)}
@@ -586,6 +621,7 @@ const AcademicManagementTab = ({ courses, professors, cycles }) => {
                   Ciclo Academico:
                 </Label>
                 <div className="flex items-center gap-2 border border-gray-300 rounded-lg px-3 py-2.5 bg-white focus-within:ring-2 focus-within:ring-gray-200">
+                  <LibraryBig className="w-5 h-5 text-gray-400 mt-1 flex-shrink-0"/>
                   <SelectNative
                     value={selectedCycle}
                     onChange={(e) => setSelectedCycle(e.target.value)}
@@ -604,6 +640,7 @@ const AcademicManagementTab = ({ courses, professors, cycles }) => {
                   Código de Sección
                 </Label>
                 <div className="flex items-center gap-2 border border-gray-300 rounded-lg px-3 py-2.5 bg-white focus-within:ring-2 focus-within:ring-gray-200">
+                  <Plus className="w-5 h-5 text-gray-400 mt-1 flex-shrink-0"/>
                   <Input
                     type="text"
                     value={sectionCode}
@@ -616,6 +653,7 @@ const AcademicManagementTab = ({ courses, professors, cycles }) => {
                   Capacidad:
                 </Label>
                 <div className="flex items-center gap-2 border border-gray-300 rounded-lg px-3 py-2.5 bg-white focus-within:ring-2 focus-within:ring-gray-200">
+                  <UserCog className="w-5 h-5 text-gray-400 mt-1 flex-shrink-0"/>
                   <Input
                     type="number"
                     min="1"
@@ -675,7 +713,14 @@ const UserManagementTab = () => {
   return (
     <section>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-        <h2>Usuarios de la Institución</h2>
+        <div style={{ marginTop: '10px'}} className="flex items-start gap-3">
+          <div className="bg-white/10 p-2.5 rounded-lg backdrop-blur-sm">
+            <User className="w-6 h-6" />
+          </div>
+          <div className="flex-1">
+            <h1 className="text-2xl font-bold mb-2">Usuarios de la Institución</h1>
+          </div>
+        </div>
         <Button
           onClick={() => setIsModalOpen(true)}
           className="flex items-center gap-2 bg-black text-white px-4 py-2 rounded-lg hover:bg-gray-800"
@@ -685,19 +730,9 @@ const UserManagementTab = () => {
         </Button>
       </div>
 
-      {isLoading ? (
-        <p>Cargando usuarios...</p>
-      ) : (
-        <ul style={{ listStyle: "none", padding: 0 }}>
-          {users &&
-            users.map((u) => (
-              <li key={u._id} style={styles.card}>
-                <strong>{u.name}</strong> ({u.email}) - Rol: {u.role}
-              </li>
-            ))}
-        </ul>
-      )}
-
+      {/* Usar la tabla de administración de usuarios */}
+      <AdminUsersTable />
+      
       <ModalOverlay isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
         <BlurFade inView delay={0.1}>
           <Card className="w-full max-w-md shadow-xl rounded-3xl border-0 bg-white">

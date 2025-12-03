@@ -53,18 +53,18 @@ export function TagsSelector({
     <div className={`w-full flex flex-col gap-2 ${className}`}>
       {/* Contenedor de tags seleccionados */}
       <div
-        className="w-full flex items-center justify-start gap-1.5 bg-white border min-h-[44px] overflow-x-auto p-1.5 no-scrollbar"
+        className="w-full flex items-center justify-start gap-1.5 bg-card border min-h-[44px] overflow-x-auto p-1.5 no-scrollbar"
         style={{
           borderRadius: 12,
         }}
         ref={selectedsContainerRef}>
         {selectedTags.length === 0 ? (
-          <span className="text-gray-400 text-sm px-2">{placeholder}</span>
+          <span className="text-muted-foreground text-sm px-2">{placeholder}</span>
         ) : (
           selectedTags.map((tag) => (
             <motion.div
               key={tag.id}
-              className="flex items-center gap-1 pl-2.5 pr-1 py-1 bg-white shadow-sm border shrink-0"
+              className="flex items-center gap-1 pl-2.5 pr-1 py-1 bg-muted shadow-sm border shrink-0"
               style={{
                 borderRadius: 10,
               }}
@@ -73,14 +73,14 @@ export function TagsSelector({
               exit={{ opacity: 0, scale: 0.8 }}
               transition={{ duration: 0.2 }}
               layoutId={`tag-${tag.id}`}>
-              <span className="text-gray-700 text-sm font-medium">
+              <span className="text-foreground text-sm font-medium">
                 {tag.label}
               </span>
               <button 
                 type="button"
                 onClick={() => removeSelectedTag(tag.id)} 
-                className="p-0.5 rounded-full hover:bg-gray-100">
-                <X className="size-4 text-gray-500" />
+                className="p-0.5 rounded-full hover:bg-muted-foreground/20">
+                <X className="size-4 text-muted-foreground" />
               </button>
             </motion.div>
           ))
@@ -90,7 +90,7 @@ export function TagsSelector({
       {/* Contenedor de tags disponibles */}
       {tags.length > selectedTags.length && (
         <div
-          className="bg-white shadow-sm p-2 border w-full max-h-[140px] overflow-y-auto"
+          className="bg-card shadow-sm p-2 border w-full max-h-[140px] overflow-y-auto"
           style={{
             borderRadius: 12,
           }}>
@@ -103,12 +103,12 @@ export function TagsSelector({
                   key={tag.id}
                   type="button"
                   layoutId={`tag-${tag.id}`}
-                  className="flex items-center gap-1 px-3 py-1.5 bg-gray-100/60 hover:bg-gray-200/80 transition-colors shrink-0"
+                  className="flex items-center gap-1 px-3 py-1.5 bg-muted hover:bg-muted/80 transition-colors shrink-0 text-foreground"
                   onClick={() => addSelectedTag(tag)}
                   style={{
                     borderRadius: 10,
                   }}>
-                  <span className="text-gray-700 text-sm font-medium">
+                  <span className="text-foreground text-sm font-medium">
                     {tag.label}
                   </span>
                 </motion.button>

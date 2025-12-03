@@ -3,10 +3,12 @@ import { useSelector, useDispatch } from "react-redux";
 import { getMyProgress, reset } from "../progress/progressSlice";
 import CareerEnrollmentPage from "../../pages/CareerEnrollmentPage";
 import StudentMatriculaPage from "../../pages/StudentMatriculaPage";
-import StudentCoursesPage from "../../pages/StudentCoursesPage"; // <-- 1. IMPORTAR
+import StudentCoursesPage from "../../pages/StudentCoursesPage";
+import { DashboardSkeleton } from "@/components/layout/DashboardSkeleton"; // <-- 1. Importar
 
 const StudentDashboard = () => {
   const dispatch = useDispatch();
+  const { user } = useSelector((state) => state.auth);
   const { progressData, isLoading } = useSelector((state) => state.progress);
 
   useEffect(() => {
@@ -16,30 +18,37 @@ const StudentDashboard = () => {
     };
   }, [dispatch]);
 
-  if (isLoading) {
-    return <h2>Cargando tu progreso académico...</h2>;
+  // --- 2. Estado de Carga MEJORADO ---
+  if (isLoading || !user || (user.institution.type === "university" && !progressData)) {
+    return <DashboardSkeleton />;
+  }
+  
+  // Fallback si el progreso falla
+  if (user.institution.type === "university" && !progressData) {
+     return <h2>No se pudo cargar tu información. Intenta refrescar la página.</h2>;
   }
 
-  if (!progressData) {
-    return <h2>No se pudo cargar tu información. Intenta de nuevo.</h2>;
+  // --- Flujo para UNIVERSIDADES ---
+  if (user.institution.type === "university") {
+    if (progressData.needsCareerEnrollment) {
+      return <CareerEnrollmentPage />;
+    } else if (
+      progressData.currentEnrollments &&
+      progressData.currentEnrollments.length > 0
+    ) {
+      return <StudentCoursesPage />;
+    } else {
+      return <StudentMatriculaPage />;
+    }
   }
 
-  // ===============================================================
-  // 👇 LA LÓGICA DE TRES ESTADOS
-  // ===============================================================
-  if (progressData.needsCareerEnrollment) {
-    // ESTADO 1: No tiene carrera
-    return <CareerEnrollmentPage />;
-  } else if (
-    progressData.currentEnrollments &&
-    progressData.currentEnrollments.length > 0
-  ) {
-    // ESTADO 2: Tiene carrera Y está matriculado en el ciclo actual
-    return <StudentCoursesPage />; // <-- Esto ahora muestra la vista con historial y filtro
-  } else {
-    // ESTADO 3: Tiene carrera, pero necesita matricularse
-    return <StudentMatriculaPage />;
+  // --- Flujo para COLEGIOS (high_school) ---
+  if (user.institution.type === "high_school") {
+    // Los colegios van directo a su lista de cursos
+    return <StudentCoursesPage />;
   }
+
+  return <h1>Dashboard no disponible para este tipo de institución.</h1>;
 };
 
 export default StudentDashboard;

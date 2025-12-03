@@ -1,7 +1,8 @@
 'use client';;
-import { cn } from '@/lib/utils';
+import { cn } from '../lib/utils';
 import { ArrowRight, Code2, Copy, Rocket, Zap } from 'lucide-react';
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 
 export default function CardFlip({
   title = 'Build MVPs Fast',
@@ -15,7 +16,11 @@ export default function CardFlip({
     'Zero Setup Required',
   ],
 
-  color = '#ff2e88'
+  color = '#006ef4ff',
+  // nueva API para el CTA inferior
+  actionLabel = 'Start Building',
+  actionHref = null,
+  actionOnClick = null,
 }) {
   const [isFlipped, setIsFlipped] = useState(false);
 
@@ -200,20 +205,36 @@ export default function CardFlip({
                 'hover:scale-[1.02] hover:cursor-pointer',
                 'hover:border-primary/20 border border-transparent'
               )}>
-              <span
-                className="group-hover/start:text-primary text-sm font-semibold text-zinc-900 transition-colors duration-300 dark:text-white">
-                Start Building
-              </span>
-              <div className="group/icon relative">
-                <div
-                  className={cn(
-                    'absolute inset-[-6px] rounded-lg transition-all duration-300',
-                    'from-primary/20 via-primary/10 bg-gradient-to-br to-transparent',
-                    'scale-90 opacity-0 group-hover/start:scale-100 group-hover/start:opacity-100'
-                  )} />
-                <ArrowRight
-                  className="text-primary relative z-10 h-4 w-4 transition-all duration-300 group-hover/start:translate-x-1 group-hover/start:scale-110" />
-              </div>
+              {/* Reemplazado: CTA que puede ser Link o button; usa los mismos estilos y color --primary */}
+              {actionHref ? (
+                <Link
+                  to={actionHref}
+                  className="flex w-full items-center justify-between rounded-lg p-2.5 transition-all duration-300 hover:from-primary/10 hover:via-primary/5 hover:to-transparent hover:scale-[1.02] hover:cursor-pointer"
+                  style={{ textDecoration: 'none' }}
+                >
+                  <span className="group-hover/start:text-primary text-sm font-semibold text-zinc-900 dark:text-white">
+                    {actionLabel}
+                  </span>
+                  <div className="group/icon relative">
+                    <div className="absolute inset-[-6px] rounded-lg transition-all duration-300 from-primary/20 via-primary/10 bg-gradient-to-br to-transparent scale-90 opacity-0 group-hover/start:scale-100 group-hover/start:opacity-100" />
+                    <ArrowRight className="text-primary relative z-10 h-4 w-4 transition-all duration-300 group-hover/start:translate-x-1 group-hover/start:scale-110" />
+                  </div>
+                </Link>
+              ) : (
+                <button
+                  onClick={actionOnClick}
+                  className="flex w-full items-center justify-between rounded-lg p-2.5 transition-all duration-300 hover:from-primary/10 hover:via-primary/5 hover:to-transparent hover:scale-[1.02] hover:cursor-pointer"
+                  type="button"
+                >
+                  <span className="group-hover/start:text-primary text-sm font-semibold text-zinc-900 dark:text-white">
+                    {actionLabel}
+                  </span>
+                  <div className="group/icon relative">
+                    <div className="absolute inset-[-6px] rounded-lg transition-all duration-300 from-primary/20 via-primary/10 bg-gradient-to-br to-transparent scale-90 opacity-0 group-hover/start:scale-100 group-hover/start:opacity-100" />
+                    <ArrowRight className="text-primary relative z-10 h-4 w-4 transition-all duration-300 group-hover/start:translate-x-1 group-hover/start:scale-110" />
+                  </div>
+                </button>
+              )}
             </div>
           </div>
         </div>

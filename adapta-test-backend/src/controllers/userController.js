@@ -1,6 +1,8 @@
+// src/controllers/userController.js
 const User = require("../models/userModel");
 const Institution = require("../models/institutionModel");
 const generateToken = require("../utils/generateToken");
+// 👇 LA LÍNEA QUE FALTABA
 const InstitutionRulesService = require("../services/institutionRulesService");
 
 const getAvailableInstitutions = async (req, res, next) => {

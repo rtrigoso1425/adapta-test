@@ -1,43 +1,22 @@
 import { useEffect, useState } from "react";
-// eslint-disable-next-line no-unused-vars
-import { useSelector, useDispatch } from "react-redux";
-import { Link } from "react-router-dom";
-import axios from "axios"; // Usaremos axios para un nuevo servicio simple
+import axios from "axios";
 import { store } from "../services/store";
+import { CourseCard } from "@/components/CourseCard";
+import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"; // <-- 1. Importar Select
+import { CourseGridSkeleton } from "@/components/CourseCardSkeleton"; // <-- 2. Importar Skeletons
+import { PendingAssignments } from "@/components/PendingAssignments"; // <-- 3. Importar Tareas
 
-// --- Componente de Tarjeta de Curso (inspirado en tu imagen) ---
-const CourseCard = ({ enrollment }) => {
-  // Lógica de progreso (placeholder por ahora)
-  const progress = Math.floor(Math.random() * 30); // Simulación de progreso
-
-  return (
-    <div style={styles.card}>
-      <div style={styles.cardImage}></div>
-      <div style={{ padding: "15px" }}>
-        <span style={styles.progressText}>{progress}%</span>
-        <h4>{enrollment.section.course.title}</h4>
-        <p style={styles.cardInfo}>
-          {enrollment.section.sectionCode} - Presencial
-        </p>
-        <p style={styles.cardInfo}>
-          <small>{enrollment.section.instructor.name}</small>
-        </p>
-        <Link
-          to={`/learn/section/${enrollment.section._id}`}
-          style={{ textDecoration: "none" }}
-        >
-          <button style={styles.cardButton}>Ir al Curso</button>
-        </Link>
-      </div>
-    </div>
-  );
-};
-
-// --- Componente Principal de la Página ---
 const StudentCoursesPage = () => {
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState("active"); // 'active' o el ID de un ciclo
+  const [filter, setFilter] = useState("active");
 
   useEffect(() => {
     const fetchHistory = async () => {
@@ -55,90 +34,70 @@ const StudentCoursesPage = () => {
     fetchHistory();
   }, []);
 
-  if (loading) {
-    return <h2>Cargando tus cursos...</h2>;
-  }
-
   const filteredHistory = history.filter((group) => {
     if (filter === "all") return true;
     if (filter === "active") return group.isActive;
     return group.cycleId === filter;
   });
 
+  // --- 4. Renderizado con Tailwind y componentes UI ---
   return (
-    <div>
-      <div style={styles.header}>
-        <h2>Mis Cursos</h2>
-        <select
-          value={filter}
-          onChange={(e) => setFilter(e.target.value)}
-          style={styles.filterSelect}
-        >
-          <option value="active">Periodo actual</option>
-          <option value="all">Todos los periodos</option>
-          {history.map((group) => (
-            <option key={group.cycleId} value={group.cycleId}>
-              {group.cycleName}
-            </option>
-          ))}
-        </select>
+    <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 items-start">
+      {/* Columna Principal de Cursos (ocupa 3 de 4 columnas en 'lg') */}
+      <div className="lg:col-span-3 space-y-8">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <h1 className="text-3xl font-bold tracking-tight">Mis Cursos</h1>
+          
+          {/* 5. Filtro REEMPLAZADO con Shadcn Select */}
+          <Select value={filter} onValueChange={setFilter}>
+            <SelectTrigger className="w-full sm:w-[200px]">
+              <SelectValue placeholder="Filtrar periodo..." />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="active">Periodo actual</SelectItem>
+              <SelectItem value="all">Todos los periodos</SelectItem>
+              {history.map((group) => (
+                <SelectItem key={group.cycleId} value={group.cycleId}>
+                  {group.cycleName}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+        </div>
+
+        {/* 6. Lógica de Carga con SKELETON */}
+        {loading ? (
+          <CourseGridSkeleton />
+        ) : filteredHistory.length > 0 ? (
+          filteredHistory.map((group) => (
+            <section key={group.cycleId}>
+              <h2 className="text-2xl font-semibold tracking-tight mb-4">
+                {group.cycleName}
+                {group.isActive && (
+                  <Badge variant="secondary" className="ml-3">
+                    Actual
+                  </Badge>
+                )}
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {group.enrollments.map((enrollment) => (
+                  <CourseCard key={enrollment._id} enrollment={enrollment} />
+                ))}
+              </div>
+            </section>
+          ))
+        ) : (
+          <p className="text-muted-foreground">No tienes cursos para mostrar en este periodo.</p>
+        )}
       </div>
 
-      {filteredHistory.map((group) => (
-        <div key={group.cycleId}>
-          <h3 style={styles.cycleHeader}>
-            {group.cycleName} {group.isActive && "(Actual)"}
-          </h3>
-          <div style={styles.cardContainer}>
-            {group.enrollments.map((enrollment) => (
-              <CourseCard key={enrollment._id} enrollment={enrollment} />
-            ))}
-          </div>
-        </div>
-      ))}
+      {/* 7. Columna Lateral de Tareas (ocupa 1 de 4 columnas en 'lg') */}
+      <aside className="lg:col-span-1 space-y-4">
+        <PendingAssignments />
+      </aside>
     </div>
   );
-};
-
-const styles = {
-  header: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    borderBottom: "1px solid #eee",
-    paddingBottom: "10px",
-  },
-  filterSelect: { padding: "8px", fontSize: "1rem" },
-  cycleHeader: { color: "#333", marginTop: "30px" },
-  cardContainer: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))",
-    gap: "20px",
-  },
-  card: {
-    border: "1px solid #ddd",
-    borderRadius: "8px",
-    overflow: "hidden",
-    background: "white",
-  },
-  cardImage: { height: "150px", background: "#f0e4f7" /* Color de ejemplo */ },
-  progressText: {
-    background: "#eee",
-    padding: "2px 8px",
-    borderRadius: "4px",
-    fontSize: "0.8rem",
-    fontWeight: "bold",
-  },
-  cardInfo: { color: "#666", margin: "5px 0" },
-  cardButton: {
-    width: "100%",
-    padding: "10px",
-    border: "none",
-    background: "#e9d8f2",
-    color: "#333",
-    cursor: "pointer",
-    marginTop: "10px",
-  },
 };
 
 export default StudentCoursesPage;

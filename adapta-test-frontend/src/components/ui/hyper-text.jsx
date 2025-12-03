@@ -1,4 +1,5 @@
-"use client";;
+"use client";
+// eslint-disable-next-line no-unused-vars
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 
@@ -19,7 +20,7 @@ export function HyperText({
   },
 
   className,
-  animateOnLoad = true
+  animateOnLoad = true,
 }) {
   const [displayText, setDisplayText] = useState(text.split(""));
   const [trigger, setTrigger] = useState(false);
@@ -44,8 +45,10 @@ export function HyperText({
             l === " "
               ? l
               : i <= interations.current
-                ? text[i]
-                : alphabets[getRandomInt(26)]));
+              ? text[i]
+              : alphabets[getRandomInt(26)]
+          )
+        );
         interations.current = interations.current + 0.1;
       } else {
         setTrigger(false);
@@ -59,13 +62,15 @@ export function HyperText({
   return (
     <div
       className="flex scale-100 cursor-default overflow-hidden py-2"
-      onMouseEnter={triggerAnimation}>
+      onMouseEnter={triggerAnimation}
+    >
       <AnimatePresence mode="wait">
         {displayText.map((letter, i) => (
           <motion.span
             key={i}
             className={cn("font-mono", letter === " " ? "w-3" : "", className)}
-            {...framerProps}>
+            {...framerProps}
+          >
             {letter.toUpperCase()}
           </motion.span>
         ))}

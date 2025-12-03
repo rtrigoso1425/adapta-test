@@ -94,40 +94,40 @@ export function DatePicker({
     <div className={`relative ${className}`}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full px-4 py-3 border border-gray-300 rounded-lg text-left flex items-center justify-between hover:border-gray-400 transition-colors bg-white"
+        className="w-full px-4 py-3 border rounded-lg text-left flex items-center justify-between hover:border-primary/50 transition-colors bg-card text-foreground"
         type="button"
       >
-        <span className={displayedDate ? "text-gray-700" : "text-gray-400"}>
+        <span className={displayedDate ? "text-foreground" : "text-muted-foreground"}>
           {displayedDate ? formatDate(displayedDate) : placeholder}
         </span>
-        <CalendarIcon className="w-5 h-5 text-gray-400" />
+        <CalendarIcon className="w-5 h-5 text-muted-foreground" />
       </button>
 
       {isOpen && (
-        <div className="absolute top-full mt-2 left-0 right-0 bg-white rounded-xl shadow-lg border border-gray-200 z-50 p-4">
+        <div className="absolute top-full mt-2 left-0 right-0 bg-card rounded-xl shadow-lg border z-50 p-4">
           <div className="flex items-center justify-between mb-3">
             <button
               onClick={handlePrevMonth}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              className="p-2 hover:bg-muted rounded-lg transition-colors"
               type="button"
             >
-              <ChevronLeft className="w-5 h-5 text-gray-700" />
+              <ChevronLeft className="w-5 h-5 text-foreground" />
             </button>
-            <div className="font-semibold text-gray-800 capitalize">
+            <div className="font-semibold text-foreground capitalize">
               {monthNames[currentMonth.getMonth()]} {currentMonth.getFullYear()}
             </div>
             <button
               onClick={handleNextMonth}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              className="p-2 hover:bg-muted rounded-lg transition-colors"
               type="button"
             >
-              <ChevronRight className="w-5 h-5 text-gray-700" />
+              <ChevronRight className="w-5 h-5 text-foreground" />
             </button>
           </div>
 
           <div className="grid grid-cols-7 gap-1 mb-2">
             {dayNames.map((dn) => (
-              <div key={dn} className="text-center text-xs font-semibold text-gray-600 py-1">
+              <div key={dn} className="text-center text-xs font-semibold text-muted-foreground py-1">
                 {dn}
               </div>
             ))}
@@ -144,8 +144,8 @@ export function DatePicker({
                   disabled={disabled}
                   type="button"
                   className={`aspect-square flex items-center justify-center rounded-lg text-sm transition-all
-                    ${disabled ? 'text-gray-300 cursor-not-allowed' : 'text-gray-700 hover:bg-blue-50 hover:text-blue-600 cursor-pointer'}
-                    ${selected ? 'bg-blue-600 text-white hover:bg-blue-700' : ''}`}
+                    ${disabled ? 'text-muted-foreground/30 cursor-not-allowed' : 'text-foreground hover:bg-primary/10 hover:text-primary cursor-pointer'}
+                    ${selected ? 'bg-primary text-primary-foreground hover:bg-primary/90' : ''}`}
                 >
                   {day.date.getDate()}
                 </button>

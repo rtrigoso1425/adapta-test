@@ -2,83 +2,98 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Efectos personalizados para el hero */
+@layer base {
+  :root {
+    /* Paleta de Colores "Azure" (Modo Claro) */
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+
+    --primary: 221.2 83.2% 53.3%; /* <-- Azul Primario */
+    --primary-foreground: 210 40% 98%;
+
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+
+    --ring: 221.2 83.2% 53.3%; /* <-- Azul para Foco */
+    --radius: 0.75rem;
+  }
+
+  .dark {
+    /* Paleta de Colores "Azure" (Modo Oscuro) */
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+
+    --primary: 217.2 91.2% 59.8%; /* <-- Azul Primario (Claro) */
+    --primary-foreground: 222.2 47.4% 11.2%;
+
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+
+    --ring: 217.2 91.2% 59.8%; /* <-- Azul para Foco (Claro) */
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
 @layer utilities {
-  .animate-marquee {
-    animation: marquee 25s linear infinite;
+  .animate-collapsible-down {
+    animation: collapsible-down 0.2s ease-out;
   }
-
-  @keyframes marquee {
-    0% {
-      transform: translateX(0%);
-    }
-    100% {
-      transform: translateX(-100%);
-    }
-  }
-
-  /* Efecto de glow para el fondo */
-  .glow-purple {
-    box-shadow: 0 0 20px rgba(147, 51, 234, 0.3), 0 0 40px rgba(147, 51, 234, 0.2), 0 0 80px rgba(147, 51, 234, 0.1);
+  .animate-collapsible-up {
+    animation: collapsible-up 0.2s ease-out;
   }
 }
 
-/* Gradiente de fondo mejorado */
-.bg-gradient-dark {
-  background: radial-gradient(ellipse at center, rgba(88, 28, 135, 0.15) 0%, rgba(0, 0, 0, 1) 70%);
+@keyframes collapsible-down {
+  from { height: 0 }
+  to { height: var(--radix-collapsible-content-height) }
 }
 
-@theme inline {
-  @keyframes fade-in {
-  0% {
-    opacity: 0;
-    transform: translateY(20px);
-    }
-  100% {
-    opacity: 1;
-    transform: translateY(0);
-    }
-  }
-  @keyframes fade-up {
-  0% {
-    opacity: 0;
-    transform: translateY(40px);
-    }
-  100% {
-    opacity: 1;
-    transform: translateY(0);
-    }
-  }
-  @keyframes moveAurora1 {
-  from {
-    transform: translate(0, 0);
-    }
-  to {
-    transform: translate(100px, 80px);
-    }
-  }
-  @keyframes moveAurora2 {
-  from {
-    transform: translate(0, 0);
-    }
-  to {
-    transform: translate(-100px, -80px);
-    }
-  }
-  @keyframes moveAurora1 {
-  from {
-    transform: translate(0, 0);
-    }
-  to {
-    transform: translate(100px, 80px);
-    }
-  }
-  @keyframes moveAurora2 {
-  from {
-    transform: translate(0, 0);
-    }
-  to {
-    transform: translate(-100px, -80px);
-    }
-  }
+@keyframes collapsible-up {
+  from { height: var(--radix-collapsible-content-height) }
+  to { height: 0 }
 }

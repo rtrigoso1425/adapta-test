@@ -17,7 +17,8 @@ import {
     FileText, 
     Upload, 
     X,
-    Plus 
+    Plus,
+    AlertCircle 
 } from "lucide-react";
 
 // ##################################################################
@@ -78,14 +79,15 @@ const CurriculumForm = ({ careerId }) => {
     };
 
     if (coursesLoading) {
-        return <p className="text-center text-gray-600">Cargando lista de cursos...</p>;
+        return <p className="text-center text-muted-foreground">Cargando lista de cursos...</p>;
     }
 
     return (
         <>
             <Button
                 onClick={() => setIsModalOpen(true)}
-                className="flex items-center gap-2 bg-black text-white px-4 py-2 rounded-lg hover:bg-gray-800"
+                variant="default"
+                className="flex items-center gap-2 px-4 py-2 rounded-lg"
             >
                 <Plus size={20} />
                 Añadir Curso a la Malla
@@ -93,28 +95,28 @@ const CurriculumForm = ({ careerId }) => {
             
             <ModalOverlay isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
                 <BlurFade inView delay={0.1}>
-                    <Card className="w-full max-w-md shadow-xl rounded-3xl border-0 bg-white">
+                    <Card className="w-full max-w-md shadow-xl rounded-3xl border-0 bg-card">
                       <CardHeader className="space-y-2 pb-4">
-                            <CardTitle className="text-2xl font-semibold text-center text-gray-900">
+                            <CardTitle className="text-2xl font-semibold text-center text-foreground">
                                 <Typewriter text={["Añadir Curso a la Malla"]} speed={150} />
                             </CardTitle>
-                            <p className="text-sm text-center text-gray-500 mt-1">
+                            <p className="text-sm text-center text-muted-foreground mt-1">
                                 Selecciona un curso del catálogo y asígnalo a un ciclo
                             </p>
                         </CardHeader>
                         <CardContent className="space-y-4">
                             <form onSubmit={onSubmit} className="space-y-4">
                                 <div className="space-y-2">
-                                    <Label className="text-sm font-medium text-gray-700">
+                                    <Label className="text-sm font-medium text-foreground">
                                         Curso
                                     </Label>
-                                    <div className="flex items-center gap-2 border border-gray-300 rounded-lg px-3 py-2.5 bg-white focus-within:ring-2 focus-within:ring-gray-200">
-                                        <Book className="w-5 h-5 text-gray-400" />
+                                    <div className="flex items-center gap-2 border rounded-lg px-3 py-2.5 bg-card focus-within:ring-2">
+                                        <Book className="w-5 h-5 text-muted-foreground" />
                                         <SelectNative
                                             value={selectedCourse}
                                             onChange={(e) => setSelectedCourse(e.target.value)}
                                             required
-                                            className="w-full border-0 focus-visible:ring-0 focus-visible:outline-none shadow-none text-black"
+                                            className="w-full border-0 focus-visible:ring-0 focus-visible:outline-none shadow-none text-foreground"
                                         >
                                             <option value="">-- Selecciona un curso del catálogo --</option>
                                             {courses.map(course => (
@@ -125,11 +127,11 @@ const CurriculumForm = ({ careerId }) => {
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label className="text-sm font-medium text-gray-700">
+                                    <Label className="text-sm font-medium text-foreground">
                                         Número de Ciclo
                                     </Label>
-                                    <div className="flex items-center gap-2 border border-gray-300 rounded-lg px-3 py-2.5 bg-white focus-within:ring-2 focus-within:ring-gray-200">
-                                        <BookPlus className="w-5 h-5 text-gray-400" />
+                                    <div className="flex items-center gap-2 border rounded-lg px-3 py-2.5 bg-card focus-within:ring-2">
+                                        <BookPlus className="w-5 h-5 text-muted-foreground" />
                                         <Input
                                             type="number"
                                             min="1"
@@ -137,7 +139,7 @@ const CurriculumForm = ({ careerId }) => {
                                             onChange={(e) => setCycleNumber(e.target.value)}
                                             placeholder="Ej. 1"
                                             required
-                                            className="w-full border-0 focus-visible:ring-0 focus-visible:outline-none shadow-none text-black"
+                                            className="w-full border-0 focus-visible:ring-0 focus-visible:outline-none shadow-none text-foreground"
                                         />
                                     </div>
                                 </div>
@@ -145,7 +147,8 @@ const CurriculumForm = ({ careerId }) => {
                                 <div className="flex justify-end gap-3 mt-6">
                                     <Button
                                         type="submit"
-                                        className="w-full py-3 rounded-lg text-white bg-black hover:bg-gray-800 font-medium shadow-md transition-colors"
+                                        variant="default"
+                                        className="w-full py-3 rounded-lg font-medium shadow-md transition-colors"
                                     >
                                         Añadir a Malla
                                     </Button>
@@ -188,7 +191,8 @@ const SyllabusUploader = ({ coursesInCurriculum }) => {
         <>
             <Button
                 onClick={() => setIsModalOpen(true)}
-                className="flex items-center gap-2 bg-black text-white px-4 py-2 rounded-lg hover:bg-gray-800"
+                variant="default"
+                className="flex items-center gap-2 px-4 py-2 rounded-lg"
             >
                 <Upload size={20} />
                 Subir Sílabus
@@ -196,28 +200,28 @@ const SyllabusUploader = ({ coursesInCurriculum }) => {
 
             <ModalOverlay isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
                 <BlurFade inView delay={0.1}>
-                    <Card className="w-full max-w-md shadow-xl rounded-3xl border-0 bg-white">
+                    <Card className="w-full max-w-md shadow-xl rounded-3xl border-0 bg-card">
                         <CardHeader className="space-y-2 pb-4">
-                            <CardTitle className="text-2xl font-semibold text-center text-gray-900">
+                            <CardTitle className="text-2xl font-semibold text-center text-foreground">
                                 <Typewriter text={["Subir o Actualizar Sílabus"]} speed={150} />
                             </CardTitle>
-                            <p className="text-sm text-center text-gray-500 mt-1">
+                            <p className="text-sm text-center text-muted-foreground mt-1">
                                 Selecciona un curso y carga el archivo PDF del sílabus
                             </p>
                         </CardHeader>
                         <CardContent className="space-y-4">
                             <form onSubmit={handleSubmit} className="space-y-4">
                                 <div className="space-y-2">
-                                    <Label className="text-sm font-medium text-gray-700">
+                                    <Label className="text-sm font-medium text-foreground">
                                         Selecciona el Curso
                                     </Label>
-                                    <div className="flex items-center gap-2 border border-gray-300 rounded-lg px-3 py-2.5 bg-white focus-within:ring-2 focus-within:ring-gray-200">
-                                        <Book className="w-5 h-5 text-gray-400" />
+                                    <div className="flex items-center gap-2 border rounded-lg px-3 py-2.5 bg-card focus-within:ring-2">
+                                        <Book className="w-5 h-5 text-muted-foreground" />
                                         <SelectNative
                                             value={selectedCourseId}
                                             onChange={(e) => setSelectedCourseId(e.target.value)}
                                             required
-                                            className="w-full border-0 focus-visible:ring-0 focus-visible:outline-none shadow-none text-black"
+                                            className="w-full border-0 focus-visible:ring-0 focus-visible:outline-none shadow-none text-foreground"
                                         >
                                             <option value="">-- Selecciona un curso de tu malla --</option>
                                             {coursesInCurriculum.map(course => (
@@ -228,17 +232,17 @@ const SyllabusUploader = ({ coursesInCurriculum }) => {
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label className="text-sm font-medium text-gray-700">
+                                    <Label className="text-sm font-medium text-foreground">
                                         Archivo PDF del Sílabus
                                     </Label>
-                                    <div className="flex items-center gap-2 border border-gray-300 rounded-lg px-3 py-2.5 bg-white focus-within:ring-2 focus-within:ring-gray-200">
-                                        <FileText className="w-5 h-5 text-gray-400" />
+                                    <div className="flex items-center gap-2 border rounded-lg px-3 py-2.5 bg-card focus-within:ring-2">
+                                        <FileText className="w-5 h-5 text-muted-foreground" />
                                         <input 
                                             type="file" 
                                             accept=".pdf" 
                                             onChange={(e) => setSelectedFile(e.target.files[0])} 
                                             required
-                                            className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200"
+                                            className="w-full text-sm text-muted-foreground file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-muted file:text-foreground hover:file:bg-muted/80"
                                         />
                                     </div>
                                 </div>
@@ -246,7 +250,8 @@ const SyllabusUploader = ({ coursesInCurriculum }) => {
                                 <div className="flex justify-end gap-3 mt-6">
                                     <Button
                                         type="submit"
-                                        className="w-full py-3 rounded-lg text-white bg-black hover:bg-gray-800 font-medium shadow-md transition-colors"
+                                        variant="default"
+                                        className="w-full py-3 rounded-lg font-medium shadow-md transition-colors"
                                     >
                                         Subir Sílabus
                                     </Button>
@@ -264,6 +269,8 @@ const SyllabusUploader = ({ coursesInCurriculum }) => {
 const CoordinatorDashboard = () => {
     const dispatch = useDispatch();
     const { myCareer, isLoading } = useSelector((state) => state.careers);
+    const [selectedCareer, setSelectedCareer] = useState(null);
+    const [myCareers, setMyCareers] = useState([]);
     
     useEffect(() => {
         dispatch(getMyCareer());
@@ -275,60 +282,131 @@ const CoordinatorDashboard = () => {
         }
     }, [dispatch]);
 
-    if (isLoading || !myCareer) {
+    // Actualizar estado cuando myCareer cambie
+    useEffect(() => {
+        if (myCareer) {
+            // Si es un array, establecer múltiples carreras
+            if (Array.isArray(myCareer)) {
+                setMyCareers(myCareer);
+                setSelectedCareer(myCareer[0] || null);
+            } else {
+                // Si es un objeto singular
+                setMyCareers([myCareer]);
+                setSelectedCareer(myCareer);
+            }
+        }
+    }, [myCareer]);
+
+    if (isLoading) {
         return (
             <div className="flex items-center justify-center min-h-screen">
-                <h3 className="text-xl text-gray-600">Cargando datos del coordinador...</h3>
+                <h3 className="text-xl text-muted-foreground">Cargando datos del coordinador...</h3>
             </div>
         );
     }
 
-    const allCoursesInCurriculum = myCareer.curriculum.flatMap(cycle => cycle.courses);
+    // Caso: Sin carreras asignadas
+    if (!selectedCareer || (Array.isArray(myCareers) && myCareers.length === 0)) {
+        return (
+            <div className="container mx-auto px-4 py-8">
+                <BlurFade inView delay={0.1}>
+                    <Card className="shadow-lg rounded-2xl border p-12 text-center max-w-2xl mx-auto">
+                        <div className="flex justify-center mb-4">
+                            <div className="bg-yellow-100 dark:bg-yellow-900/20 p-4 rounded-full">
+                                <AlertCircle className="w-12 h-12 text-yellow-600 dark:text-yellow-400" />
+                            </div>
+                        </div>
+                        <h2 className="text-3xl font-bold text-foreground mb-3">
+                            Sin Carreras Asignadas
+                        </h2>
+                        <p className="text-lg text-muted-foreground mb-6">
+                            No tienes ninguna carrera asignada como coordinador. Por favor, contacta a un administrador para que te asigne una carrera.
+                        </p>
+                        <div className="bg-muted p-4 rounded-lg">
+                            <p className="text-sm text-muted-foreground">
+                                Una vez que se te asigne una carrera, podrás gestionar su malla curricular, subir sílabus y administrar los cursos.
+                            </p>
+                        </div>
+                    </Card>
+                </BlurFade>
+            </div>
+        );
+    }
+
+    const currentCareer = selectedCareer;
+    const allCoursesInCurriculum = currentCareer.curriculum ? currentCareer.curriculum.flatMap(cycle => cycle.courses) : [];
+    const hasMultipleCareers = myCareers.length > 1;
 
     return (
         <div className="container mx-auto px-4 py-8">
             {/* Header Section */}
             <BlurFade inView delay={0.1}>
                 <div className="mb-8">
+                    {/* Selector de Carrera (solo si tiene múltiples) */}
+                    {hasMultipleCareers && (
+                        <div className="mb-6 p-4 bg-muted rounded-lg border">
+                            <Label className="text-sm font-medium text-foreground block mb-3">
+                                Selecciona una Carrera
+                            </Label>
+                            <div className="flex items-center gap-2 border rounded-lg px-3 py-2.5 bg-card focus-within:ring-2">
+                                <GraduationCap className="w-5 h-5 text-muted-foreground" />
+                                <SelectNative
+                                    value={currentCareer._id}
+                                    onChange={(e) => {
+                                        const career = myCareers.find(c => c._id === e.target.value);
+                                        setSelectedCareer(career);
+                                    }}
+                                    className="w-full border-0 focus-visible:ring-0 focus-visible:outline-none shadow-none text-foreground"
+                                >
+                                    {myCareers.map(career => (
+                                        <option key={career._id} value={career._id}>
+                                            {career.name}
+                                        </option>
+                                    ))}
+                                </SelectNative>
+                            </div>
+                        </div>
+                    )}
+
                     <div className="flex items-start justify-between gap-3 mb-4">
                         <div className="flex items-start gap-3">
-                            <div className="bg-black/10 p-2.5 rounded-lg backdrop-blur-sm">
+                            <div className="bg-card/50 p-2.5 rounded-lg backdrop-blur-sm">
                                 <GraduationCap className="w-6 h-6" />
                             </div>
                             <div className="flex-1">
                                 <h1 className="text-3xl font-bold mb-2">Gestión de Carrera</h1>
-                                <p className="text-xl text-gray-700">{myCareer.name}</p>
-                                <p className="text-sm text-gray-500 mt-1">{myCareer.description}</p>
+                                <p className="text-xl text-foreground">{currentCareer.name}</p>
+                                <p className="text-sm text-muted-foreground mt-1">{currentCareer.description}</p>
                             </div>
                         </div>
                         <div className="flex gap-3">
-                            <CurriculumForm careerId={myCareer._id} />
+                            <CurriculumForm careerId={currentCareer._id} />
                             <SyllabusUploader coursesInCurriculum={allCoursesInCurriculum} />
                         </div>
                     </div>
                 </div>
             </BlurFade>
 
-            <hr className="mb-8 border-gray-300" />
+            <hr className="mb-8 border" />
 
             {/* Curriculum Section */}
             <BlurFade inView delay={0.3}>
                 <div>
                     <div className="flex items-center gap-3 mb-6">
-                        <div className="bg-black/10 p-2.5 rounded-lg backdrop-blur-sm">
+                        <div className="bg-card/50 p-2.5 rounded-lg backdrop-blur-sm">
                             <BookPlus className="w-6 h-6" />
                         </div>
                         <h2 className="text-2xl font-bold">Malla Curricular</h2>
                     </div>
 
-                    {myCareer.curriculum && myCareer.curriculum.length > 0 ? (
+                    {currentCareer.curriculum && currentCareer.curriculum.length > 0 ? (
                         <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-                            {myCareer.curriculum.map((cycle, index) => (
+                            {currentCareer.curriculum.map((cycle, index) => (
                                 <BlurFade key={cycle.cycleNumber} inView delay={0.4 + index * 0.1}>
-                                    <Card className="shadow-lg rounded-2xl border border-gray-200 hover:shadow-xl transition-shadow">
+                                    <Card className="shadow-lg rounded-2xl border hover:shadow-xl transition-shadow">
                                         <CardHeader className="pb-3">
                                             <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                                                <div className="bg-black text-white rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold">
+                                                <div className="bg-primary text-primary-foreground rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold">
                                                     {cycle.cycleNumber}
                                                 </div>
                                                 Ciclo {cycle.cycleNumber}
@@ -340,15 +418,15 @@ const CoordinatorDashboard = () => {
                                                     {cycle.courses.map(course => (
                                                         <li 
                                                             key={course._id}
-                                                            className="flex items-start gap-2 text-sm text-gray-700 bg-gray-50 p-2 rounded-lg"
+                                                            className="flex items-start gap-2 text-sm text-foreground bg-muted p-2 rounded-lg"
                                                         >
-                                                            <Book className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />
+                                                            <Book className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
                                                             <span>{course.title}</span>
                                                         </li>
                                                     ))}
                                                 </ul>
                                             ) : (
-                                                <p className="text-sm text-gray-500 italic">
+                                                <p className="text-sm text-muted-foreground italic">
                                                     No hay cursos asignados a este ciclo.
                                                 </p>
                                             )}
@@ -358,8 +436,8 @@ const CoordinatorDashboard = () => {
                             ))}
                         </div>
                     ) : (
-                        <Card className="shadow-lg rounded-2xl border border-gray-200 p-8 text-center">
-                            <p className="text-gray-500 text-lg">
+                        <Card className="shadow-lg rounded-2xl border p-8 text-center">
+                            <p className="text-muted-foreground text-lg">
                                 La malla curricular aún no ha sido definida.
                             </p>
                         </Card>
@@ -374,14 +452,14 @@ const CoordinatorDashboard = () => {
 const modalStyles = {
   overlay: {
     position: "fixed",
-    inset: 0, // top:0 left:0 right:0 bottom:0
+    inset: 0,
     width: "100vw",
     height: "100vh",
     backgroundColor: "rgba(0, 0, 0, 0.35)",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    zIndex: 1009, // por encima de cualquier layout
+    zIndex: 1009,
     backdropFilter: "blur(2px)"
   },
 

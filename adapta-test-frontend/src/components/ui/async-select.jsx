@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { Check, ChevronsUpDown, Search, Loader2 } from "lucide-react";
 import { useDebounce } from "../../hooks/use-debounce";
+import { useTheme } from "../../components/theme-provider";
 
 import { cn } from "../../lib/utils";
 import { Button } from "../../components/ui/button";
@@ -41,6 +42,9 @@ export function AsyncSelect(
     clearable = true
   }
 ) {
+  const { theme } = useTheme();
+  const isDark = theme === "dark" || (theme === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+  
   const [mounted, setMounted] = useState(false);
   const [open, setOpen] = useState(false);
   const [options, setOptions] = useState([]);
@@ -105,52 +109,70 @@ export function AsyncSelect(
           role="combobox"
           aria-expanded={open}
           className={cn(
-            "justify-between bg-white hover:bg-white h-auto py-2",
+            "justify-between h-auto py-2",
+            "bg-white dark:bg-gray-700 hover:bg-white dark:hover:bg-gray-600",
             disabled && "opacity-50 cursor-not-allowed",
             triggerClassName
           )}
-          style={{ width: width, color: "#000000" }}
+          style={{ 
+            width: width, 
+            color: isDark ? "#e0e0e0" : "#000000"
+          }}
           disabled={disabled}>
           {selectedOption ? (
             getDisplayValue(selectedOption)
           ) : (
-            <span className="text-gray-400 text-sm">{placeholder}</span>
+            <span className="text-gray-400 dark:text-gray-500 text-sm">{placeholder}</span>
           )}
-          <ChevronsUpDown className="opacity-50" size={10} />
+          <ChevronsUpDown className="opacity-50 dark:opacity-60" size={10} />
         </Button>
       </PopoverTrigger>
       <PopoverContent 
         align="start"
-        className={cn("p-0 bg-white", className)}
+        className={cn(
+          "p-0",
+          "bg-white dark:bg-gray-800",
+          "border border-gray-200 dark:border-gray-700",
+          className
+        )}
         style={{ width: 'var(--radix-popover-trigger-width)' }}
       >
-        <Command className="bg-white">
-          <div className="relative border-b w-full bg-white">
+        <Command className="bg-white dark:bg-gray-800">
+          <div className={cn(
+            "relative border-b w-full",
+            "bg-white dark:bg-gray-800",
+            "border-gray-200 dark:border-gray-700"
+          )}>
             <Search
-              className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500 dark:text-gray-400" />
             <Input
               placeholder={`Busca tu ${label.toLowerCase()}...`}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="focus-visible:ring-0 rounded-b-none border-none pl-8 flex-1 bg-white w-full" />
+              className={cn(
+                "focus-visible:ring-0 rounded-b-none border-none pl-8 flex-1 w-full",
+                "bg-white dark:bg-gray-800",
+                "text-black dark:text-white",
+                "placeholder:text-gray-500 dark:placeholder:text-gray-400"
+              )} />
             {loading && options.length > 0 && (
               <div
                 className="absolute right-2 top-1/2 transform -translate-y-1/2 flex items-center">
-                <Loader2 className="h-4 w-4 animate-spin" />
+                <Loader2 className="h-4 w-4 animate-spin text-gray-600 dark:text-gray-300" />
               </div>
             )}
           </div>
-          <CommandList className="bg-white">
+          <CommandList className="bg-white dark:bg-gray-800">
             {error && (
               <div className="p-4 text-destructive text-center">
                 {error}
               </div>
             )}
             {loading && options.length === 0 && (
-              loadingSkeleton || <DefaultLoadingSkeleton />
+              loadingSkeleton || <DefaultLoadingSkeleton isDark={isDark} />
             )}
             {!loading && !error && options.length === 0 && (
-              notFound || <CommandEmpty>{noResultsMessage ?? `No se encontro ninguna ${label.toLowerCase()}.`}</CommandEmpty>
+              notFound || <CommandEmpty className="text-gray-600 dark:text-gray-400">{noResultsMessage ?? `No se encontro ninguna ${label.toLowerCase()}.`}</CommandEmpty>
             )}
             <CommandGroup>
               {options.map((option) => (
@@ -158,12 +180,18 @@ export function AsyncSelect(
                   key={getOptionValue(option)}
                   value={getOptionValue(option)}
                   onSelect={handleSelect}
-                  className="w-full cursor-pointer px-0">
+                  className={cn(
+                    "w-full cursor-pointer px-0",
+                    "text-black dark:text-white",
+                    "hover:bg-gray-100 dark:hover:bg-gray-700",
+                    "focus:bg-gray-100 dark:focus:bg-gray-700"
+                  )}>
                   <div className="flex items-center justify-between w-full px-2">
                     {renderOption(option)}
                     <Check
                       className={cn(
                         "ml-auto h-3 w-3 flex-shrink-0",
+                        "text-black dark:text-white",
                         selectedValue === getOptionValue(option) ? "opacity-100" : "opacity-0"
                       )} />
                   </div>
@@ -177,16 +205,25 @@ export function AsyncSelect(
   );
 }
 
-function DefaultLoadingSkeleton() {
+function DefaultLoadingSkeleton({ isDark }) {
   return (
     <CommandGroup>
       {[1, 2, 3].map((i) => (
         <CommandItem key={i} disabled>
           <div className="flex items-center gap-2 w-full">
-            <div className="h-6 w-6 rounded-full animate-pulse bg-muted" />
+            <div className={cn(
+              "h-6 w-6 rounded-full animate-pulse",
+              "bg-gray-300 dark:bg-gray-600"
+            )} />
             <div className="flex flex-col flex-1 gap-1">
-              <div className="h-4 w-24 animate-pulse bg-muted rounded" />
-              <div className="h-3 w-16 animate-pulse bg-muted rounded" />
+              <div className={cn(
+                "h-4 w-24 animate-pulse rounded",
+                "bg-gray-300 dark:bg-gray-600"
+              )} />
+              <div className={cn(
+                "h-3 w-16 animate-pulse rounded",
+                "bg-gray-300 dark:bg-gray-600"
+              )} />
             </div>
           </div>
         </CommandItem>

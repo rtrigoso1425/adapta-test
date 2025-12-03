@@ -85,11 +85,34 @@ const ModalOverlay = ({ isOpen, onClose, children }) => {
 const AssignCoordinatorModal = ({ career, onClose }) => {
   const dispatch = useDispatch();
   const { coordinators, isLoading } = useSelector((state) => state.users);
+  const { careers: allCareers } = useSelector((state) => state.careers); // obtener todas las carreras
   const [selectedCoordinator, setSelectedCoordinator] = useState("");
 
   useEffect(() => {
     dispatch(getCoordinators());
+    // asegurar que las carreras estén cargadas para el filtrado
+    if (!allCareers || allCareers.length === 0) {
+      dispatch(getCareers());
+    }
   }, [dispatch]);
+
+  // Construir set de IDs de coordinadores ya asignados (robusto contra distintos shapes)
+  const assignedCoordinatorIds = new Set();
+  (allCareers || []).forEach((cr) => {
+    if (!cr) return;
+    const coord = cr.coordinator;
+    if (!coord) return;
+    const id = typeof coord === "string" ? coord : (coord._id || coord.id);
+    if (id) assignedCoordinatorIds.add(String(id));
+  });
+
+  // Filtrar coordinadores que NO tienen ya una carrera asignada (excluir IDs en assignedCoordinatorIds)
+  const availableCoordinators = (coordinators || []).filter((c) => {
+    const id = c && (c._id || c.id) ? String(c._id || c.id) : null;
+    const isAssigned = id ? assignedCoordinatorIds.has(id) : false;
+    const isCoordinatorRole = c.role ? c.role === "coordinator" : true;
+    return !isAssigned && isCoordinatorRole;
+  });
 
   const onSubmit = (e) => {
     e.preventDefault();
@@ -104,53 +127,62 @@ const AssignCoordinatorModal = ({ career, onClose }) => {
   return (
     <ModalOverlay isOpen={true} onClose={onClose}>
       <BlurFade inView delay={0.1}>
-        <Card className="w-full max-w-md shadow-xl rounded-3xl border-0 bg-white">
+        <Card className="w-full max-w-md shadow-xl rounded-3xl border-0 bg-card">
           <CardHeader className="space-y-2 pb-4">
-            <CardTitle className="text-2xl font-semibold text-center text-gray-900">
+            <CardTitle className="text-2xl font-semibold text-center text-foreground">
               Asignar Coordinador
             </CardTitle>
-            <p className="text-sm text-center text-gray-500 mt-1">
+            <p className="text-sm text-center text-muted-foreground mt-1">
               {career.name}
             </p>
           </CardHeader>
           <CardContent className="space-y-4">
             {isLoading ? (
-              <p className="text-center text-gray-600">Cargando coordinadores...</p>
+              <p className="text-center text-muted-foreground">Cargando coordinadores...</p>
             ) : (
               <form onSubmit={onSubmit} className="space-y-4">
                 <div className="space-y-2">
-                  <Label className="text-sm font-medium text-gray-700">
+                  <Label className="text-sm font-medium text-foreground">
                     Selecciona un Coordinador
                   </Label>
-                  <div className="flex items-center gap-2 border border-gray-300 rounded-lg px-3 py-2.5 bg-white focus-within:ring-2 focus-within:ring-gray-200">
-                    <User className="w-5 h-5 text-gray-400" />
-                    <SelectNative
-                      value={selectedCoordinator}
-                      onChange={(e) => setSelectedCoordinator(e.target.value)}
-                      required
-                      className="w-full border-0 focus-visible:ring-0 focus-visible:outline-none shadow-none text-black"
-                    >
-                      <option value="">-- Selecciona un coordinador --</option>
-                      {coordinators.map((c) => (
-                        <option key={c._id} value={c._id}>
-                          {c.name} ({c.email})
-                        </option>
-                      ))}
-                    </SelectNative>
-                  </div>
+
+                  {/* Si no hay coordinadores disponibles, mostrar mensaje */}
+                  {availableCoordinators.length === 0 ? (
+                    <div className="rounded-lg border px-4 py-3 bg-muted/10 text-sm text-muted-foreground">
+                      No hay coordinadores disponibles sin asignación de carrera.
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2 border rounded-lg px-3 py-2.5 bg-card focus-within:ring-2">
+                      <User className="w-5 h-5 text-muted-foreground" />
+                      <SelectNative
+                        value={selectedCoordinator}
+                        onChange={(e) => setSelectedCoordinator(e.target.value)}
+                        required
+                        className="w-full border-0 focus-visible:ring-0 focus-visible:outline-none shadow-none text-foreground"
+                      >
+                        <option value="">-- Selecciona un coordinador --</option>
+                        {availableCoordinators.map((c) => (
+                          <option key={c._id} value={c._id}>
+                            {c.name} ({c.email})
+                          </option>
+                        ))}
+                      </SelectNative>
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex justify-end gap-3 mt-6">
                   <Button
                     type="button"
                     onClick={onClose}
-                    className="px-6 py-2 rounded-lg text-gray-700 bg-gray-200 hover:bg-gray-300 font-medium transition-colors"
+                    variant="outline"
                   >
                     Cancelar
                   </Button>
                   <Button
                     type="submit"
-                    className="px-6 py-2 rounded-lg text-white bg-black hover:bg-gray-800 font-medium shadow-md transition-colors"
+                    variant="default"
+                    disabled={availableCoordinators.length === 0}
                   >
                     Asignar
                   </Button>
@@ -198,7 +230,8 @@ const CareerManagementTab = ({ careers, onAssignCoordinatorClick }) => {
         </div>
         <Button
           onClick={() => setIsModalOpen(true)}
-          className="flex items-center gap-2 bg-black text-white px-4 py-2 rounded-lg hover:bg-gray-800"
+          variant="default"
+          className="flex items-center gap-2 px-4 py-2 rounded-lg"
         >
           <Plus size={20} />
           Nueva Carrera
@@ -218,13 +251,14 @@ const CareerManagementTab = ({ careers, onAssignCoordinatorClick }) => {
               outlinedButtonInscription="Ver Malla"
               onFilledButtonClick={() => onAssignCoordinatorClick(career)}
               onOutlinedButtonClick={() => { window.location.href = `/career/${career._id}/curriculum`; }}
-              accentColor="#000000ff"
-              backgroundColor="#ffffff"
-              textColorMain="#111827"
-              textColorSub="#4b5563"
-              chronicleButtonBg="#ffffff"
-              chronicleButtonFg="#111827"
-              chronicleButtonHoverFg="#ffffff"
+              /* Use theme-aware CSS variables (Tailwind theme tokens) so cards adapt to light/dark */
+              accentColor={`hsl(var(--primary))`}
+              backgroundColor={`hsl(var(--card))`}
+              textColorMain={`hsl(var(--card-foreground))`}
+              textColorSub={`hsl(var(--muted-foreground))`}
+              chronicleButtonBg={`transparent`}
+              chronicleButtonFg={`hsl(var(--foreground))`}
+              chronicleButtonHoverFg={`hsl(var(--primary-foreground))`}
             />
           </div>
         ))}
@@ -232,88 +266,88 @@ const CareerManagementTab = ({ careers, onAssignCoordinatorClick }) => {
 
       <ModalOverlay isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
         <BlurFade inView delay={0.1}>
-          <Card className="w-full max-w-md shadow-xl rounded-3xl border-0 bg-white">
+          <Card className="w-full max-w-md shadow-xl rounded-3xl border-0 bg-card">
             <CardHeader className="space-y-2 pb-4">
-              <CardTitle className="text-2xl font-semibold text-center text-gray-900">
+              <CardTitle className="text-2xl font-semibold text-center text-foreground">
                 <Typewriter text={["Crear Nueva Carrera"]} speed={150} />
               </CardTitle>
-              <p className="text-sm text-center text-gray-500 mt-1">
+              <p className="text-sm text-center text-muted-foreground mt-1">
                 Completa el formulario para registrar una nueva carrera
               </p>
             </CardHeader>
             <CardContent className="space-y-4">
               <form onSubmit={handleCreateCareer} className="space-y-4">
                 <div className="space-y-2">
-                  <Label className="text-sm font-medium text-gray-700">
+                  <Label className="text-sm font-medium text-foreground">
                     Nombre de la Carrera
                   </Label>
-                  <div className="flex items-center gap-2 border border-gray-300 rounded-lg px-3 py-2.5 bg-white focus-within:ring-2 focus-within:ring-gray-200">
-                    <GraduationCap className="w-5 h-5 text-gray-400" />
+                  <div className="flex items-center gap-2 border rounded-lg px-3 py-2.5 bg-card focus-within:ring-2">
+                    <GraduationCap className="w-5 h-5 text-muted-foreground" />
                     <Input
                       type="text"
                       value={name}
                       onChange={(e) => setName(e.target.value)}
                       placeholder="Ingrese Nombre de la Carrera"
                       required
-                      className="w-full border-0 focus-visible:ring-0 focus-visible:outline-none shadow-none text-black"
+                      className="w-full border-0 focus-visible:ring-0 focus-visible:outline-none shadow-none text-foreground"
                     />
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="text-sm font-medium text-gray-700">
+                  <Label className="text-sm font-medium text-foreground">
                     Descripción
                   </Label>
-                  <div className="flex items-start gap-2 border border-gray-300 rounded-lg px-3 py-2.5 bg-white focus-within:ring-2 focus-within:ring-gray-200">
-                    <FileText className="w-5 h-5 text-gray-400 mt-1" />
+                  <div className="flex items-start gap-2 border rounded-lg px-3 py-2.5 bg-card focus-within:ring-2">
+                    <FileText className="w-5 h-5 text-muted-foreground mt-1" />
                     <textarea
                       value={description}
                       onChange={(e) => setDescription(e.target.value)}
                       placeholder="Ingrese la Descripción"
                       required
-                      className="w-full border-0 bg-transparent focus:outline-none focus:ring-0 resize-none text-black"
+                      className="w-full border-0 bg-transparent focus:outline-none focus:ring-0 resize-none text-foreground"
                       rows={3}
                     />
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="text-sm font-medium text-gray-700">
+                  <Label className="text-sm font-medium text-foreground">
                     Duración
                   </Label>
-                  <div className="flex items-center gap-2 border border-gray-300 rounded-lg px-3 py-2.5 bg-white focus-within:ring-2 focus-within:ring-gray-200">
-                    <Timer className="w-5 h-5 text-gray-400" />
+                  <div className="flex items-center gap-2 border rounded-lg px-3 py-2.5 bg-card focus-within:ring-2">
+                    <Timer className="w-5 h-5 text-muted-foreground" />
                     <Input
                       type="text"
                       value={duration}
                       onChange={(e) => setDuration(e.target.value)}
                       placeholder="Ingrese la Duración (ej. 10 Ciclos)"
                       required
-                      className="w-full border-0 focus-visible:ring-0 focus-visible:outline-none shadow-none text-black"
+                      className="w-full border-0 focus-visible:ring-0 focus-visible:outline-none shadow-none text-foreground"
                     />
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="text-sm font-medium text-gray-700">
+                  <Label className="text-sm font-medium text-foreground">
                     Grados
                   </Label>
-                  <div className="flex items-center gap-2 border border-gray-300 rounded-lg px-3 py-2.5 bg-white focus-within:ring-2 focus-within:ring-gray-200">
-                    <BookPlus className="w-5 h-5 text-gray-400" />
+                  <div className="flex items-center gap-2 border rounded-lg px-3 py-2.5 bg-card focus-within:ring-2">
+                    <BookPlus className="w-5 h-5 text-muted-foreground" />
                     <Input
                       type="text"
                       value={degrees}
                       onChange={(e) => setDegrees(e.target.value)}
                       placeholder="Ingrese los Grados (separados por comas)"
                       required
-                      className="w-full border-0 focus-visible:ring-0 focus-visible:outline-none shadow-none text-black"
+                      className="w-full border-0 focus-visible:ring-0 focus-visible:outline-none shadow-none text-foreground"
                     />
                   </div>
                 </div>
 
                 <Button
                   type="submit"
-                  className="w-full mt-6 py-3 rounded-lg hover:cursor-pointer text-white bg-black hover:bg-gray-800 font-medium shadow-md transition-colors"
+                  className="w-full mt-6 py-3 rounded-lg font-medium shadow-md transition-colors"
                 >
                   Crear Carrera
                 </Button>
@@ -364,7 +398,8 @@ const CourseManagementTab = ({ courses }) => {
         </div>
         <Button
           onClick={() => setIsModalOpen(true)}
-          className="flex items-center gap-2 bg-black text-white px-4 py-2 rounded-lg hover:bg-gray-800"
+          variant="default"
+          className="flex items-center gap-2 px-4 py-2 rounded-lg"
         >
           <Plus size={20} />
           Nuevo Curso
@@ -376,56 +411,56 @@ const CourseManagementTab = ({ courses }) => {
 
       <ModalOverlay isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
         <BlurFade inView delay={0.1}>
-          <Card className="w-full max-w-md shadow-xl rounded-3xl border-0 bg-white">
+          <Card className="w-full max-w-md shadow-xl rounded-3xl border-0 bg-card">
             <CardHeader className="space-y-2 pb-4">
-              <CardTitle className="text-2xl font-semibold text-center text-gray-900">
+              <CardTitle className="text-2xl font-semibold text-center text-foreground">
                 <Typewriter text={["Crear Nuevo Curso"]} speed={150} />
               </CardTitle>
-              <p className="text-sm text-center text-gray-500 mt-1">
+              <p className="text-sm text-center text-muted-foreground mt-1">
                 Completa el formulario para crear un nuevo curso
               </p>
             </CardHeader>
             <CardContent className="space-y-4">
               <form onSubmit={handleCreateCourse} className="space-y-4">
-                <Label className="text-black">Titulo del Curso</Label>
-                <div className="flex items-center gap-2 border rounded-lg px-3 py-2 bg-white">
-                  <Book className="w-5 h-5 text-gray-400 mt-1"/>
+                <Label className="text-foreground">Titulo del Curso</Label>
+                <div className="flex items-center gap-2 border rounded-lg px-3 py-2 bg-card">
+                  <Book className="w-5 h-5 text-muted-foreground mt-1"/>
                   <Input
                     type="text"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
                     placeholder="Título del Curso"
                     required
-                    className="w-full border-0 focus-visible:ring-0 focus-visible:outline-none shadow-none text-black"
+                    className="w-full border-0 focus-visible:ring-0 focus-visible:outline-none shadow-none text-foreground"
                   />
                 </div>
-                <Label className="text-black">Descripcion del Curso</Label>
-                <div className="flex items-center gap-2 border rounded-lg px-3 py-2 bg-white">
-                  <FileText className="w-5 h-5 text-gray-400 mt-1"/>
+                <Label className="text-foreground">Descripcion del Curso</Label>
+                <div className="flex items-center gap-2 border rounded-lg px-3 py-2 bg-card">
+                  <FileText className="w-5 h-5 text-muted-foreground mt-1"/>
                   <textarea
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                     placeholder="Descripción"
                     required
-                    className="w-full border-0 bg-transparent focus:outline-none focus:ring-0 resize-none text-black"
+                    className="w-full border-0 bg-transparent focus:outline-none focus:ring-0 resize-none text-foreground"
                   />
                 </div>
                 
-                <Label className="text-black">Prerrequisitos</Label>
-                <div className="flex items-start gap-2 border rounded-lg px-3 py-2 bg-white min-h-[100px]">
-                  <LibraryBig className="w-5 h-5 text-gray-400 mt-1 flex-shrink-0"/>
+                <Label className="text-foreground">Prerrequisitos</Label>
+                <div className="flex items-start gap-2 border rounded-lg px-3 py-2 bg-card min-h-[100px]">
+                  <LibraryBig className="w-5 h-5 text-muted-foreground mt-1 flex-shrink-0"/>
                   <div className="w-full">
                     <TagsSelector 
                       tags={courseTags}
                       value={prerequisites}
                       onChange={handlePrerequisitesChange}
                       placeholder="Selecciona los cursos prerequisitos"
-                      className="w-full border-0 focus-visible:ring-0 focus-visible:outline-none shadow-none text-black"
+                      className="w-full border-0 focus-visible:ring-0 focus-visible:outline-none shadow-none text-foreground"
                     />
                   </div>
                 </div>
                 
-                <Button type="submit" className="w-full rounded-xl hover:cursor-pointer text-white bg-black font-medium shadow-md disabled:opacity-50 disabled:cursor-not-allowed">
+                <Button type="submit" variant="default" className="w-full rounded-xl hover:cursor-pointer font-medium shadow-md disabled:opacity-50 disabled:cursor-not-allowed">
                   Crear Curso
                 </Button>
               </form>
@@ -497,14 +532,16 @@ const AcademicManagementTab = ({ courses, professors, cycles }) => {
         <div style={{ display: 'flex', gap: '10px' }}>
           <Button
             onClick={() => setIsCycleModalOpen(true)}
-            className="flex items-center gap-2 bg-black text-white px-4 py-2 rounded-lg hover:bg-gray-800"
+            variant="default"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg"
           >
             <Plus size={20} />
             Nuevo Ciclo
           </Button>
           <Button
             onClick={() => setIsSectionModalOpen(true)}
-            className="flex items-center gap-2 bg-black text-white px-4 py-2 rounded-lg hover:bg-gray-800"
+            variant="default"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg"
           >
             <Plus size={20} />
             Nueva Sección
@@ -517,47 +554,47 @@ const AcademicManagementTab = ({ courses, professors, cycles }) => {
       <AdminCyclesTable />
       <ModalOverlay isOpen={isCycleModalOpen} onClose={() => setIsCycleModalOpen(false)}>
         <BlurFade inView delay={0.1}>
-          <Card className="w-full max-w-md shadow-xl rounded-3xl border-0 bg-white">
+          <Card className="w-full max-w-md shadow-xl rounded-3xl border-0 bg-card">
             <CardHeader className="space-y-2 pb-4">
-              <CardTitle className="text-2xl font-semibold text-center text-gray-900">
+              <CardTitle className="text-2xl font-semibold text-center text-foreground">
                 <Typewriter text={["Crear Nuevo Ciclo"]} speed={150} />
               </CardTitle>
-              <p className="text-sm text-center text-gray-500 mt-1">
+              <p className="text-sm text-center text-muted-foreground mt-1">
                 Completa el formulario para crear un nuevo ciclo
               </p>
             </CardHeader>
             <CardContent className="space-y-4">
               <form onSubmit={handleCreateCycle}>
-                <Label className="text-sm font-medium text-gray-700">Nombre del ciclo:</Label>
-                <div className="flex items-center gap-2 border border-gray-300 rounded-lg px-3 py-2.5 bg-white focus-within:ring-2 focus-within:ring-gray-200">
+                <Label className="text-sm font-medium text-foreground">Nombre del ciclo:</Label>
+                <div className="flex items-center gap-2 border rounded-lg px-3 py-2.5 bg-card focus-within:ring-2">
                   <Input
                     type="text"
                     value={cycleName}
                     onChange={(e) => setCycleName(e.target.value)}
                     placeholder="Nombre del Ciclo (ej. 2025-II)"
                     required
-                    className="w-full border-0 focus-visible:ring-0 focus-visible:outline-none shadow-none text-black"
+                    className="w-full border-0 focus-visible:ring-0 focus-visible:outline-none shadow-none text-foreground"
                   />
                 </div>
-                <Label className="text-sm font-medium text-gray-700">Fecha de Inicio:</Label>
-                <div className="flex items-center gap-2 border border-gray-300 rounded-lg px-3 py-2.5 bg-white focus-within:ring-2 focus-within:ring-gray-200">
+                <Label className="text-sm font-medium text-foreground">Fecha de Inicio:</Label>
+                <div className="flex items-center gap-2 border rounded-lg px-3 py-2.5 bg-card focus-within:ring-2">
                   <DatePicker
                     date={startDate ? new Date(startDate) : null}
                     onDateChange={(date) => setStartDate(date ? date.toISOString() : "")}
                     required
-                    className="w-full border-0 focus-visible:ring-0 focus-visible:outline-none shadow-none text-black"
+                    className="w-full border-0 focus-visible:ring-0 focus-visible:outline-none shadow-none text-foreground"
                   />
                 </div>
-                <Label className="text-sm font-medium text-gray-700">Fecha de Fin:</Label>
-                <div className="flex items-center gap-2 border border-gray-300 rounded-lg px-3 py-2.5 bg-white focus-within:ring-2 focus-within:ring-gray-200">
+                <Label className="text-sm font-medium text-foreground">Fecha de Fin:</Label>
+                <div className="flex items-center gap-2 border rounded-lg px-3 py-2.5 bg-card focus-within:ring-2">
                    <DatePicker
                      date={endDate ? new Date(endDate) : null}
                      onDateChange={(date) => setEndDate(date ? date.toISOString() : "")}
                      required
-                     className="w-full border-0 focus-visible:ring-0 focus-visible:outline-none shadow-none text-black bg-white"
+                     className="w-full border-0 focus-visible:ring-0 focus-visible:outline-none shadow-none text-foreground bg-card"
                    />
                  </div>
-                <Button type="submit" className="w-full rounded-xl hover:cursor-pointer text-white bg-black font-medium shadow-md disabled:opacity-50 disabled:cursor-not-allowed">
+                <Button type="submit" variant="default" className="w-full rounded-xl hover:cursor-pointer font-medium shadow-md disabled:opacity-50 disabled:cursor-not-allowed">
                   Crear Ciclo
                 </Button>
               </form>
@@ -568,27 +605,27 @@ const AcademicManagementTab = ({ courses, professors, cycles }) => {
 
       <ModalOverlay isOpen={isSectionModalOpen} onClose={() => setIsSectionModalOpen(false)}>
         <BlurFade inView delay={0.1}>
-          <Card className="w-full max-w-md shadow-xl rounded-3xl border-0 bg-white">
+          <Card className="w-full max-w-md shadow-xl rounded-3xl border-0 bg-card">
             <CardHeader className="space-y-2 pb-4">
-              <CardTitle className="text-2xl font-semibold text-center text-gray-900">
+              <CardTitle className="text-2xl font-semibold text-center text-foreground">
                 <Typewriter text={["Crear Nueva Seccion"]} speed={150} />
               </CardTitle>
-              <p className="text-sm text-center text-gray-500 mt-1">
+              <p className="text-sm text-center text-muted-foreground mt-1">
                 Completa el formulario para crear una nueva sección
               </p>
             </CardHeader>
             <CardContent className="space-y-4">
               <form onSubmit={handleCreateSection} className="space-y-4">
-                <Label className="text-sm font-medium text-gray-700">
+                <Label className="text-sm font-medium text-foreground">
                   Curso:
                 </Label>
-                <div className="flex items-center gap-2 border border-gray-300 rounded-lg px-3 py-2.5 bg-white focus-within:ring-2 focus-within:ring-gray-200">
-                  <Book className="w-5 h-5 text-gray-400 mt-1 flex-shrink-0"/>
+                <div className="flex items-center gap-2 border rounded-lg px-3 py-2.5 bg-card focus-within:ring-2">
+                  <Book className="w-5 h-5 text-muted-foreground mt-1 flex-shrink-0"/>
                   <SelectNative
                     value={selectedCourse}
                     onChange={(e) => setSelectedCourse(e.target.value)}
                     required
-                    className="w-full border-0 focus-visible:ring-0 focus-visible:outline-none shadow-none text-black"
+                    className="w-full border-0 focus-visible:ring-0 focus-visible:outline-none shadow-none text-foreground"
                   >
                     <option value="">-- Selecciona --</option>
                     {courses.map((c) => (
@@ -598,16 +635,16 @@ const AcademicManagementTab = ({ courses, professors, cycles }) => {
                     ))}
                   </SelectNative>
                 </div>
-                <Label className="text-sm font-medium text-gray-700">
+                <Label className="text-sm font-medium text-foreground">
                   Profesor:
                 </Label>
-                <div className="flex items-center gap-2 border border-gray-300 rounded-lg px-3 py-2.5 bg-white focus-within:ring-2 focus-within:ring-gray-200">
-                  <User className="w-5 h-5 text-gray-400 mt-1 flex-shrink-0"/>
+                <div className="flex items-center gap-2 border rounded-lg px-3 py-2.5 bg-card focus-within:ring-2">
+                  <User className="w-5 h-5 text-muted-foreground mt-1 flex-shrink-0"/>
                   <SelectNative
                     value={selectedProfessor}
                     onChange={(e) => setSelectedProfessor(e.target.value)}
                     required
-                    className="w-full border-0 focus-visible:ring-0 focus-visible:outline-none shadow-none text-black"
+                    className="w-full border-0 focus-visible:ring-0 focus-visible:outline-none shadow-none text-foreground"
                   >
                     <option value="">-- Selecciona --</option>
                     {professors.map((p) => (
@@ -617,16 +654,16 @@ const AcademicManagementTab = ({ courses, professors, cycles }) => {
                     ))}
                   </SelectNative>
                 </div>
-                <Label className="text-sm font-medium text-gray-700">
+                <Label className="text-sm font-medium text-foreground">
                   Ciclo Academico:
                 </Label>
-                <div className="flex items-center gap-2 border border-gray-300 rounded-lg px-3 py-2.5 bg-white focus-within:ring-2 focus-within:ring-gray-200">
-                  <LibraryBig className="w-5 h-5 text-gray-400 mt-1 flex-shrink-0"/>
+                <div className="flex items-center gap-2 border rounded-lg px-3 py-2.5 bg-card focus-within:ring-2">
+                  <LibraryBig className="w-5 h-5 text-muted-foreground mt-1 flex-shrink-0"/>
                   <SelectNative
                     value={selectedCycle}
                     onChange={(e) => setSelectedCycle(e.target.value)}
                     required
-                    className="w-full border-0 focus-visible:ring-0 focus-visible:outline-none shadow-none text-black"
+                    className="w-full border-0 focus-visible:ring-0 focus-visible:outline-none shadow-none text-foreground"
                   >
                     <option value="">-- Selecciona --</option>
                     {cycles.map((c) => (
@@ -636,34 +673,34 @@ const AcademicManagementTab = ({ courses, professors, cycles }) => {
                     ))}
                   </SelectNative>
                 </div>
-                <Label className="text-sm font-medium text-gray-700">
+                <Label className="text-sm font-medium text-foreground">
                   Código de Sección
                 </Label>
-                <div className="flex items-center gap-2 border border-gray-300 rounded-lg px-3 py-2.5 bg-white focus-within:ring-2 focus-within:ring-gray-200">
-                  <Plus className="w-5 h-5 text-gray-400 mt-1 flex-shrink-0"/>
+                <div className="flex items-center gap-2 border rounded-lg px-3 py-2.5 bg-card focus-within:ring-2">
+                  <Plus className="w-5 h-5 text-muted-foreground mt-1 flex-shrink-0"/>
                   <Input
                     type="text"
                     value={sectionCode}
                     onChange={(e) => setSectionCode(e.target.value)}
                     required
-                    className="w-full border-0 focus-visible:ring-0 focus-visible:outline-none shadow-none text-black"
+                    className="w-full border-0 focus-visible:ring-0 focus-visible:outline-none shadow-none text-foreground"
                   />
                 </div>
-                <Label className="text-sm font-medium text-gray-700">
+                <Label className="text-sm font-medium text-foreground">
                   Capacidad:
                 </Label>
-                <div className="flex items-center gap-2 border border-gray-300 rounded-lg px-3 py-2.5 bg-white focus-within:ring-2 focus-within:ring-gray-200">
-                  <UserCog className="w-5 h-5 text-gray-400 mt-1 flex-shrink-0"/>
+                <div className="flex items-center gap-2 border rounded-lg px-3 py-2.5 bg-card focus-within:ring-2">
+                  <UserCog className="w-5 h-5 text-muted-foreground mt-1 flex-shrink-0"/>
                   <Input
                     type="number"
                     min="1"
                     value={capacity}
                     onChange={(e) => setCapacity(e.target.value)}
                     required
-                    className="w-full border-0 focus-visible:ring-0 focus-visible:outline-none shadow-none text-black"
+                    className="w-full border-0 focus-visible:ring-0 focus-visible:outline-none shadow-none text-foreground"
                   />
                 </div>
-                <Button type="submit" className="w-full mt-6 py-3 rounded-lg hover:cursor-pointer text-white bg-black hover:bg-gray-800 font-medium shadow-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                <Button type="submit" variant="default" className="w-full mt-6 py-3 rounded-lg hover:cursor-pointer font-medium shadow-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
                   Crear Sección
                 </Button>
               </form>
@@ -723,7 +760,8 @@ const UserManagementTab = () => {
         </div>
         <Button
           onClick={() => setIsModalOpen(true)}
-          className="flex items-center gap-2 bg-black text-white px-4 py-2 rounded-lg hover:bg-gray-800"
+          variant="default"
+          className="flex items-center gap-2 px-4 py-2 rounded-lg"
         >
           <Plus size={20} />
           Nuevo Usuario
@@ -735,40 +773,40 @@ const UserManagementTab = () => {
       
       <ModalOverlay isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
         <BlurFade inView delay={0.1}>
-          <Card className="w-full max-w-md shadow-xl rounded-3xl border-0 bg-white">
+          <Card className="w-full max-w-md shadow-xl rounded-3xl border-0 bg-card">
             <CardHeader className="space-y-2 pb-4">
-              <CardTitle className="text-2xl font-semibold text-center text-gray-900">
+              <CardTitle className="text-2xl font-semibold text-center text-foreground">
                 <Typewriter text={["Crear Nuevo Usuario"]} speed={150} />
               </CardTitle>
-              <p className="text-sm text-center text-gray-500 mt-1">
+              <p className="text-sm text-center text-muted-foreground mt-1">
                 Completa el formulario para registrar un nuevo usuario
               </p>
             </CardHeader>
             <CardContent className="space-y-4">
               <form onSubmit={onSubmit} className="space-y-4">
                 <div className="space-y-2">
-                  <Label className="text-sm font-medium text-gray-700">
+                  <Label className="text-sm font-medium text-foreground">
                     Nombre Completo
                   </Label>
-                  <div className="flex items-center gap-2 border border-gray-300 rounded-lg px-3 py-2.5 bg-white focus-within:ring-2 focus-within:ring-gray-200">
-                    <User className="w-5 h-5 text-gray-400" />
+                  <div className="flex items-center gap-2 border rounded-lg px-3 py-2.5 bg-card focus-within:ring-2">
+                    <User className="w-5 h-5 text-muted-foreground" />
                     <Input
                       name="name"
                       value={name}
                       onChange={onChange}
                       placeholder="Ingrese el Nombre completo"
                       required
-                      className="w-full border-0 focus-visible:ring-0 focus-visible:outline-none shadow-none text-black"
+                      className="w-full border-0 focus-visible:ring-0 focus-visible:outline-none shadow-none text-foreground"
                     />
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="text-sm font-medium text-gray-700">
+                  <Label className="text-sm font-medium text-foreground">
                     Correo electrónico
                   </Label>
-                  <div className="flex items-center gap-2 border border-gray-300 rounded-lg px-3 py-2.5 bg-white focus-within:ring-2 focus-within:ring-gray-200">
-                    <Mail className="w-5 h-5 text-gray-400" />
+                  <div className="flex items-center gap-2 border rounded-lg px-3 py-2.5 bg-card focus-within:ring-2">
+                    <Mail className="w-5 h-5 text-muted-foreground" />
                     <Input
                       name="email"
                       value={email}
@@ -776,17 +814,17 @@ const UserManagementTab = () => {
                       onChange={onChange}
                       placeholder="Ingrese el Correo electrónico"
                       required
-                      className="w-full border-0 focus-visible:ring-0 focus-visible:outline-none shadow-none text-black"
+                      className="w-full border-0 focus-visible:ring-0 focus-visible:outline-none shadow-none text-foreground"
                     />
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="text-sm font-medium text-gray-700">
+                  <Label className="text-sm font-medium text-foreground">
                     Contraseña
                   </Label>
-                  <div className="flex items-center gap-2 border border-gray-300 rounded-lg px-3 py-2.5 bg-white focus-within:ring-2 focus-within:ring-gray-200">
-                    <Lock className="w-5 h-5 text-gray-400" />
+                  <div className="flex items-center gap-2 border rounded-lg px-3 py-2.5 bg-card focus-within:ring-2">
+                    <Lock className="w-5 h-5 text-muted-foreground" />
                     <Input
                       name="password"
                       value={password}
@@ -794,20 +832,20 @@ const UserManagementTab = () => {
                       onChange={onChange}
                       placeholder="Ingrese la Contraseña temporal"
                       required
-                      className="w-full border-0 focus-visible:ring-0 focus-visible:outline-none shadow-none text-black"
+                      className="w-full border-0 focus-visible:ring-0 focus-visible:outline-none shadow-none text-foreground"
                     />
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-sm font-medium text-gray-700">Rol</Label>
-                  <div className="flex items-center gap-2 border border-gray-300 rounded-lg px-3 py-2.5 bg-white focus-within:ring-2 focus-within:ring-gray-200">
-                    <CircleUserRound className="w-5 h-5 text-gray-400"/>
+                  <Label className="text-sm font-medium text-foreground">Rol</Label>
+                  <div className="flex items-center gap-2 border rounded-lg px-3 py-2.5 bg-card focus-within:ring-2">
+                    <CircleUserRound className="w-5 h-5 text-muted-foreground"/>
                     <SelectNative
                       name="role"
                       value={role}
                       onChange={onChange}
                       required
-                      className="w-full border-0 focus-visible:ring-0 focus-visible:outline-none shadow-none text-black"
+                      className="w-full border-0 focus-visible:ring-0 focus-visible:outline-none shadow-none text-foreground"
                     >
                       <option value="" disabled>
                         -- Selecciona un rol --
@@ -824,7 +862,8 @@ const UserManagementTab = () => {
                 <Button
                   type="submit"
                   disabled={isLoading}
-                  className="w-full mt-6 py-3 rounded-lg hover:cursor-pointer text-white bg-black hover:bg-gray-800 font-medium shadow-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  variant="default"
+                  className="w-full mt-6 py-3 rounded-lg hover:cursor-pointer font-medium shadow-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Crear Usuario
                 </Button>

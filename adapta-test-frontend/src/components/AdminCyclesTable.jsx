@@ -54,19 +54,19 @@ export default function AdminCyclesTable() {
   };
 
   return (
-    <div className="my-6 p-4 border border-gray-700 rounded-lg bg-black shadow-sm overflow-x-auto">
+    <div className="my-6 p-4 border rounded-lg bg-card shadow-sm overflow-x-auto">
       <div className="flex flex-wrap items-center justify-between mb-4 gap-4">
         <div className="flex gap-2 items-center flex-wrap">
           <Input
             placeholder="Buscar por nombre..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-64 bg-gray-900 text-white border-gray-700 placeholder-gray-400"
+            className="w-64"
           />
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-3 py-2 bg-gray-900 text-white border border-gray-700 rounded-lg hover:border-gray-600 transition-colors"
+            className="px-3 py-2.5 bg-card text-foreground border rounded-lg transition-colors hover:border-primary/50 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 dark:focus:ring-offset-slate-950 cursor-pointer"
           >
             <option value="all">Todos</option>
             <option value="active">Activos</option>
@@ -77,7 +77,6 @@ export default function AdminCyclesTable() {
           variant="outline" 
           size="sm" 
           onClick={() => { setSearch(""); setStatusFilter("all"); }}
-          className="bg-gray-800 text-white border-gray-700 hover:bg-gray-700"
         >
           Limpiar
         </Button>
@@ -86,17 +85,17 @@ export default function AdminCyclesTable() {
       <Table className="w-full">
         <TableHeader>
           <TableRow>
-            <TableHead className="w-[200px] text-white">Nombre</TableHead>
-            <TableHead className="w-[180px] text-white">Fecha Inicio</TableHead>
-            <TableHead className="w-[180px] text-white">Fecha Fin</TableHead>
-            <TableHead className="w-[150px] text-white">Estado</TableHead>
+            <TableHead className="w-[200px] text-foreground">Nombre</TableHead>
+            <TableHead className="w-[180px] text-foreground">Fecha Inicio</TableHead>
+            <TableHead className="w-[180px] text-foreground">Fecha Fin</TableHead>
+            <TableHead className="w-[150px] text-foreground">Estado</TableHead>
           </TableRow>
         </TableHeader>
 
         <TableBody>
           {isLoading ? (
             <TableRow>
-              <TableCell colSpan={4} className="text-center py-6 text-gray-400">
+              <TableCell colSpan={4} className="text-center py-6 text-muted-foreground">
                 Cargando ciclos...
               </TableCell>
             </TableRow>
@@ -104,21 +103,21 @@ export default function AdminCyclesTable() {
             filtered.map((c) => {
               const isActive = (c.isActive ?? c.active) === true;
               return (
-                <TableRow key={c._id} className="border-gray-700">
+                <TableRow key={c._id}>
                   <TableCell className="font-medium">
-                    <div className="text-sm font-medium text-white">{c.name}</div>
+                    <div className="text-sm font-medium text-foreground">{c.name}</div>
                   </TableCell>
 
-                  <TableCell className="text-xs text-gray-300">
+                  <TableCell className="text-xs text-muted-foreground">
                     {formatDate(c.startDate)}
                   </TableCell>
 
-                  <TableCell className="text-xs text-gray-300">
+                  <TableCell className="text-xs text-muted-foreground">
                     {formatDate(c.endDate)}
                   </TableCell>
 
                   <TableCell>
-                    <Badge className={isActive ? "bg-green-600 text-white" : "bg-gray-500 text-white"}>
+                    <Badge className={isActive ? "bg-green-600 text-white dark:bg-green-500" : "bg-gray-500 text-white dark:bg-gray-600"}>
                       {isActive ? "Activo" : "Inactivo"}
                     </Badge>
                   </TableCell>
@@ -127,7 +126,7 @@ export default function AdminCyclesTable() {
             })
           ) : (
             <TableRow>
-              <TableCell colSpan={4} className="text-center py-6 text-gray-400">
+              <TableCell colSpan={4} className="text-center py-6 text-muted-foreground">
                 No se encontraron ciclos.
               </TableCell>
             </TableRow>

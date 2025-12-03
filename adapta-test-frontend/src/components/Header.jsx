@@ -1,8 +1,7 @@
-import { Link, useNavigate } from 'react-router-dom';
-import { useSelector, useDispatch } from 'react-redux';
-import { logout, reset } from '../features/auth/authSlice';
-import { HoverButton } from './ui/hover-button';
-import { Text_03 } from '../components/ui/wave-text';
+// src/components/Header.jsx
+import { Link, useNavigate } from "react-router-dom";
+import { useSelector, useDispatch } from "react-redux";
+import { logout, reset } from "../features/auth/authSlice";
 
 const Header = () => {
   const navigate = useNavigate();
@@ -12,61 +11,73 @@ const Header = () => {
   const onLogout = () => {
     dispatch(logout());
     dispatch(reset());
-    navigate("/login");
+    navigate("/login"); // Redirigir a login en lugar de la raíz
   };
 
   return (
-    <header style={{ 
-      padding: '20px', 
-      borderBottom: '1px solid #2a2a2aff', 
-      display: 'flex', 
-      justifyContent: 'space-between', 
-      alignItems: 'center' // Esto alinea verticalmente todos los hijos
-    }}>
-      <div style={{ display: 'flex', alignItems: 'center' }}>
-        <Link to="/" style={{ 
-          textDecoration: 'none', 
-          color: 'white', 
-          fontSize: '1.5rem',
-          display: 'flex',
-          alignItems: 'center'
-        }}>
-          <Text_03 text='AdaptaTest'/>
+    <header
+      style={{
+        padding: "20px",
+        borderBottom: "1px solid #ccc",
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+      }}
+    >
+      <div>
+        <Link
+          to="/"
+          style={{ textDecoration: "none", color: "black", fontSize: "1.5rem" }}
+        >
+          AdaptaTest
         </Link>
+        {/* Mostramos el nombre de la institución si el usuario ha iniciado sesión */}
+        {user && user.institution && (
+          <span
+            style={{
+              marginLeft: "15px",
+              color: "#555",
+              borderLeft: "1px solid #ccc",
+              paddingLeft: "15px",
+            }}
+          >
+            {user.institution.name}
+          </span>
+        )}
       </div>
       <nav>
-        <ul style={{ 
-          listStyle: 'none', 
-          margin: 0, 
-          padding: 0,
-          display: 'flex', 
-          gap: '20px',
-          alignItems: 'center' // Alinea los items de la lista
-        }}>
+        <ul
+          style={{
+            listStyle: "none",
+            margin: 0,
+            display: "flex",
+            gap: "20px",
+            alignItems: "center",
+          }}
+        >
           {user ? (
             <>
-              <li style={{ display: 'flex', alignItems: 'center' }}>
-                <HoverButton as={Link} to="/dashboard">
-                  Dashboard
-                </HoverButton>
+              <li>
+                <span style={{ fontStyle: "italic" }}>
+                  Hola, {user.name} ({user.role})
+                </span>
               </li>
-              <li style={{ display: 'flex', alignItems: 'center' }}>
-                <HoverButton as={Link} to="/courses">
-                  Cursos
-                </HoverButton>
+              <li>
+                <Link to="/dashboard">Dashboard</Link>
               </li>
-              <li style={{ display: 'flex', alignItems: 'center' }}>
-                <HoverButton onClick={onLogout}>
-                  Logout
-                </HoverButton>
+              <li>
+                <button onClick={onLogout}>Cerrar Sesión</button>
               </li>
             </>
           ) : (
-            <li style={{ display: 'flex', alignItems: 'center' }}>
-              <HoverButton as={Link} to="/login">
-                Login
-              </HoverButton>
-            </li>
+            <>
+              <li>
+                <Link to="/login">Login</Link>
+              </li>
+              <li>
+                <Link to="/register">Register</Link>
+              </li>
+            </>
           )}
         </ul>
       </nav>

@@ -1,21 +1,21 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
-import { useParams } from "react-router-dom";
-import { Link } from "react-router-dom";
-
-// Importamos TODAS las acciones que este componente necesitará
+// eslint-disable-next-line no-unused-vars
+import { useParams, Link } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { LessonItem } from "@/components/LessonItem"; // <-- Importar
 import {
-  getLessonsForModule,
   createLessonInModule,
-  resetLessons,
-  markLessonAsComplete,
-  getCompletedLessons,
 } from "./contentSlice";
 import {
   getQuestionsForModule,
   createQuestion,
-  reset as resetQuestions,
 } from "../questions/questionSlice";
+
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { ChevronDown } from "lucide-react";
+
 
 const AddLessonForm = ({ moduleId }) => {
   const [title, setTitle] = useState("");
@@ -74,13 +74,13 @@ const AddQuestionForm = ({ moduleId }) => {
   );
 };
 
-const ModuleItem = ({ module }) => {
-  const [isOpen, setIsOpen] = useState(false);
+export default function ModuleItem({ module, onSelectLesson, onStartEvaluation }) {
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.auth);
-  const { id: sectionId } = useParams();
+  // eslint-disable-next-line no-unused-vars
+  const { id: sectionId } = useParams(); // Ya no lo necesita para `getCompletedLessons`
+  const [isOpen, setIsOpen] = useState(false);
 
-  // Obtenemos los estados de lecciones Y preguntas
   const { lessonsByModule, isLoadingLessons, completedLessons } = useSelector(
     (state) => state.content
   );
@@ -90,115 +90,110 @@ const ModuleItem = ({ module }) => {
 
   const lessons = lessonsByModule[module._id] || [];
   const questions = questionsByModule[module._id] || [];
+  
+  // --- LÓGICA DE CARGA MEJORADA ---
+  // `areLessonsLoading` es true si el slice global está cargando Y
+  // los datos de este módulo específico aún no han llegado.
+  const areLessonsLoading = isLoadingLessons && !lessonsByModule[module._id];
 
-  useEffect(() => {
-    if (isOpen) {
-      // Cuando se abre el módulo, pedimos tanto sus lecciones como sus preguntas
-      dispatch(getLessonsForModule(module._id));
+  const completedInModule = lessons.filter(l => completedLessons.includes(l._id)).length;
+  const totalLessons = lessons.length;
+  // const progress = ...
 
-      if (user.role === "student") {
-        dispatch(getCompletedLessons(sectionId));
-      } else if (user.role === "professor") {
-        // El profesor necesita las preguntas para su banco
-        dispatch(getQuestionsForModule(module._id));
-      }
-    } else {
-      // Cuando se cierra, limpiamos ambos estados para ese módulo
-      dispatch(resetLessons(module._id));
-      dispatch(resetQuestions()); // El reset de questions es global por ahora
+  // --- FUNCIÓN SIMPLIFICADA ---
+  const onModuleOpenChange = (isOpenState) => {
+    setIsOpen(isOpenState);
+    
+    // La carga de lecciones del estudiante ya no está aquí
+    
+    // Mantenemos la carga de preguntas para el *profesor* (lazy loading)
+    if (isOpenState && user.role === "professor" && !questionsByModule[module._id]) {
+      dispatch(getQuestionsForModule(module._id));
     }
-  }, [isOpen, dispatch, module._id, sectionId, user.role]);
-
-  const handleMarkAsComplete = (lessonId) => {
-    dispatch(
-      markLessonAsComplete({ moduleId: module._id, lessonId, sectionId })
-    );
   };
 
   return (
-    <div
-      style={{ border: "1px solid #ddd", padding: "15px", margin: "10px 0" }}
+    <Collapsible
+      open={isOpen}
+      onOpenChange={onModuleOpenChange}
+      className="border-b"
     >
-      <h3 onClick={() => setIsOpen(!isOpen)} style={{ cursor: "pointer" }}>
-        {module.title} {isOpen ? "[-]" : "[+]"}
-      </h3>
-
-      {/* Mostramos el botón de evaluación solo a los estudiantes */}
-      {user && user.role === "student" && (
-        <Link to={`/modules/${module._id}/evaluation`}>
-          <button>Evaluar mis conocimientos</button>
-        </Link>
-      )}
-
-      {/* Contenido desplegable */}
-      {isOpen && (
-        <div style={{ marginLeft: "20px", marginTop: "15px" }}>
-          {/* Sección de Lecciones */}
-          <section>
-            <h4>Lecciones</h4>
-            {isLoadingLessons ? (
-              <p>Cargando...</p>
-            ) : lessons.length > 0 ? (
-              <ul style={{ listStyle: "none", padding: 0 , marginTop: "10px"}}>
-                {lessons.map((lesson) => {
-                  const isCompleted = completedLessons.includes(lesson._id);
-                  return (
-                    <li
-                      key={lesson._id}
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                        padding: "5px 0",
-                      }}
-                    >
-                      <span>{lesson.title}</span>
-
-                      {/* 👇 AQUÍ ESTÁ LA CORRECCIÓN CLAVE 👇 */}
-                      {/* Este botón solo se renderiza si el usuario es un estudiante */}
-                      {user.role === "student" && (
-                        <button
-                          onClick={() => handleMarkAsComplete(lesson._id)}
-                          disabled={isCompleted}
-                        >
-                          {isCompleted
-                            ? "✅ Completado"
-                            : "Marcar como completado"}
-                        </button>
-                      )}
-                    </li>
-                  );
-                })}
-              </ul>
-            ) : (
-              <p>No hay lecciones en este módulo.</p>
-            )}
-            {user && user.role === "professor" && (
-              <>
-                <AddLessonForm moduleId={module._id} />
-                <hr style={{ margin: "20px 0" }} />
-                <section>
-                  <h4>Banco de Preguntas</h4>
-                  {isLoadingQuestions ? (
-                    <p>Cargando...</p>
-                  ) : questions.length > 0 ? (
-                    <ul>
-                      {questions.map((q) => (
-                        <li key={q._id}>{q.questionText}</li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <p>No hay preguntas en este módulo.</p>
-                  )}
-                  <AddQuestionForm moduleId={module._id} />
-                </section>
-              </>
-            )}
-          </section>
+      <CollapsibleTrigger className="flex flex-1 items-center justify-between py-4 font-medium transition-all hover:underline w-full [&[data-state=open]>svg]:rotate-180">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between w-full pr-4">
+          <span className="text-base font-medium text-left">{module.title}</span>
+          {user.role === "student" && (
+            <span className="text-sm text-muted-foreground font-normal">
+              {/* --- 1. SKELETON PARA EL CONTADOR --- */}
+              {areLessonsLoading ? (
+                <Skeleton className="h-4 w-24 rounded-md" />
+              ) : (
+                <span>{completedInModule} / {totalLessons} lecciones</span>
+              )}
+            </span>
+          )}
         </div>
-      )}
-    </div>
-  );
-};
+        <ChevronDown className="h-4 w-4 shrink-0 transition-transform duration-200" />
+      </CollapsibleTrigger>
+      
+      <CollapsibleContent>
+        <div className="pb-4 pt-0">
+           {/* --- 2. SKELETON PARA EL CONTENIDO --- */}
+           {areLessonsLoading ? (
+            <div className="space-y-2 p-4">
+              <Skeleton className="h-8 w-full" />
+              <Skeleton className="h-8 w-full" />
+            </div>
+           ) : (
+            <>
+              {/* ---- Vista de ESTUDIANTE ---- */}
+              {user.role === "student" && (
+                <div className="space-y-2">
+                  <Button 
+                    variant="outline" 
+                    className="ml-4 mb-2"
+                    onClick={() => onStartEvaluation(module._id)} // <-- Llama al handler
+                  >
+                    Iniciar Evaluación Adaptativa
+                  </Button>
+                  {lessons.map((lesson) => (
+                    <LessonItem
+                      key={lesson._id}
+                      lesson={lesson}
+                      isCompleted={completedLessons.includes(lesson._id)}
+                      // 3. Pasa la lección y la lista de lecciones al handler
+                      onClick={() => onSelectLesson(lesson, lessons)}
+                    />
+                  ))}
+                </div>
+              )}
+              
+              {/* ---- Vista de PROFESOR ---- */}
+              {user.role === "professor" && (
+                // ... (Contenido del profesor sin cambios)
+                <div className="bg-muted/50 rounded-md">
+                  <h4 className="p-4 text-sm font-semibold">Lecciones</h4>
+                  {lessons.map((lesson) => (
+                    <div key={lesson._id} className="p-3 border-t">
+                      {lesson.title}
+                    </div>
+                  ))}
+                  <AddLessonForm moduleId={module._id} />
 
-export default ModuleItem;
+                  <h4 className="p-4 text-sm font-semibold border-t">Banco de Preguntas</h4>
+                  {isLoadingQuestions ? <p className="p-4">Cargando...</p> :
+                    questions.map((q) => (
+                      <div key={q._id} className="p-3 border-t text-xs">
+                        {q.questionText}
+                      </div>
+                    ))
+                  }
+                  <AddQuestionForm moduleId={module._id} />
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      </CollapsibleContent>
+    </Collapsible>
+  );
+}

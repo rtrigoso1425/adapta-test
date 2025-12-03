@@ -1,7 +1,7 @@
+// src/features/auth/authSlice.js
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import authService from "./authService";
 
-// Obtener usuario del localStorage si ya existe una sesión
 const user = JSON.parse(localStorage.getItem("user"));
 
 const initialState = {
@@ -26,7 +26,7 @@ export const getInstitutions = createAsyncThunk(
   }
 );
 
-// Acción Asíncrona para Registrar Usuario (Thunk)
+// Acción para que un admin registre un nuevo usuario
 export const register = createAsyncThunk(
   "auth/register",
   async (userData, thunkAPI) => {
@@ -41,7 +41,7 @@ export const register = createAsyncThunk(
   }
 );
 
-// Acción Asíncrona para Iniciar Sesión
+// Acción para que un usuario inicie sesión
 export const login = createAsyncThunk("auth/login", async (user, thunkAPI) => {
   try {
     return await authService.login(user);
@@ -52,7 +52,6 @@ export const login = createAsyncThunk("auth/login", async (user, thunkAPI) => {
   }
 });
 
-// Acción Asíncrona para Cerrar Sesión
 export const logout = createAsyncThunk("auth/logout", async () => {
   authService.logout();
 });
@@ -84,17 +83,16 @@ export const authSlice = createSlice({
       .addCase(register.pending, (state) => {
         state.isLoading = true;
       })
-      .addCase(register.fulfilled, (state, action) => {
+      // --- LA CORRECCIÓN ESTÁ AQUÍ ---
+      .addCase(register.fulfilled, (state) => {
         state.isLoading = false;
         state.isSuccess = true;
-        // ✅ NO actualizar state.user - mantener el usuario admin logueado
-        // El nuevo usuario creado se retorna en action.payload pero NO se guarda en el state
+        // YA NO MODIFICAMOS state.user. La sesión del admin permanece intacta.
       })
       .addCase(register.rejected, (state, action) => {
         state.isLoading = false;
         state.isError = true;
         state.message = action.payload;
-        // ✅ NO poner state.user = null aquí tampoco
       })
       .addCase(login.pending, (state) => {
         state.isLoading = true;
@@ -102,7 +100,7 @@ export const authSlice = createSlice({
       .addCase(login.fulfilled, (state, action) => {
         state.isLoading = false;
         state.isSuccess = true;
-        state.user = action.payload; // ✅ Solo aquí se actualiza el usuario (al hacer login)
+        state.user = action.payload; // El login SÍ debe actualizar la sesión
       })
       .addCase(login.rejected, (state, action) => {
         state.isLoading = false;

@@ -7,9 +7,9 @@ const SelectNative = React.forwardRef(({ className, children, ...props }, ref) =
     <div className="relative">
       <select
         className={cn(
-          "peer inline-flex w-full cursor-pointer appearance-none items-center rounded-lg border border-input bg-background text-sm text-foreground shadow-sm shadow-black/5 transition-shadow focus-visible:border-ring focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/20 disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 has-[option[disabled]:checked]:text-muted-foreground",
+          "peer inline-flex w-full cursor-pointer appearance-none items-center rounded-lg border bg-card text-sm text-foreground shadow-sm shadow-black/5 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-950 disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 has-[option[disabled]:checked]:text-muted-foreground hover:border-primary/50",
           props.multiple
-            ? "py-1 [&>*]:px-3 [&>*]:py-1 [&_option:checked]:bg-accent"
+            ? "py-1 [&>*]:px-3 [&>*]:py-1 [&_option:checked]:bg-primary [&_option:checked]:text-primary-foreground"
             : "h-9 pe-8 ps-3",
           className
         )}

@@ -11,6 +11,7 @@ import { HoverButton } from "../components/ui/hover-button";
 import { LogoCarousel } from "../components/ui/logo-carousel";
 import VideoPlayer from "../components/ui/video-player";
 import { Text_03 } from '../components/ui/wave-text';
+import ReactPlayer from 'react-player';
 
 const logos = [
   { 
@@ -243,7 +244,7 @@ const HomePage = () => {
             </div>
           </div>
           <ModernTeamShowcase teamMembers={teamData} />
-          <VideoPlayer src="/el-real-video-xd_s6lXFqi9.mp4"></VideoPlayer>
+          <VideoPlayer src="https://youtu.be/D8KbXpk2J9Y?si=gBEHFro8ivbxec_S"></VideoPlayer>
         </div>
         {/* Gradient Glow */}
         <div className="absolute bottom-0 left-0 right-0 h-[400px] bg-gradient-to-t from-blue-900/50 via-blue-600/20 to-transparent rounded-t-full opacity-80 blur-3xl"></div>

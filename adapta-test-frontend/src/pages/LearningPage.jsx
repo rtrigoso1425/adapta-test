@@ -32,19 +32,13 @@ import { Link } from "react-router-dom";
 import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 
-// --- Componentes ---
 
-
-// ===================================================================================
-//  NUEVO SUB-COMPONENTE: Modal Inteligente para Tareas (ADAPTADO A MODO OSCURO)
-// ===================================================================================
 const AssignmentModal = ({ assignment, onClose }) => {
   const dispatch = useDispatch();
   const { mySubmission, isLoading } = useSelector((state) => state.submissions);
   const [content, setContent] = useState("");
 
   useEffect(() => {
-    // Al abrir, pedimos el estado de nuestra entrega para esta tarea
     if (assignment?.section && assignment?._id) {
       // Creamos el objeto con ambos IDs
       const submissionDetails = {

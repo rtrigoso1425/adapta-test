@@ -3,35 +3,40 @@ import { useSelector, useDispatch } from "react-redux";
 import { useParams, Link } from "react-router-dom";
 import { createPortal } from "react-dom";
 import { BlurFade } from "../components/ui/blur-fade";
-import { Card, CardHeader, CardContent, CardTitle } from "../components/ui/card";
+import { Card, CardHeader, CardContent, CardTitle, CardDescription, CardFooter } from "../components/ui/card";
 import { Label } from "../components/ui/label";
 import { Input } from "../components/ui/input";
 import { Button } from "../components/ui/button";
 import { Typewriter } from "../components/ui/typewriter-text";
-import { ArrowLeft, GraduationCap, Plus, X, Book, FileText, ChevronDown, ChevronUp } from "lucide-react";
+import { 
+  ArrowLeft, GraduationCap, Plus, X, Book, FileText, ChevronDown, ChevronUp, 
+  BarChart3, Users, AlertCircle, CheckCircle2, Trophy, Eye, Settings 
+} from "lucide-react";
 
-// --- Acciones de Redux ---
+import {
+  createLessonInModule,
+  getModulesForSection,
+  createAndPublishModuleToSection,
+  reset as resetContent,
+  getLessonsForModule,
+} from "../features/content/contentSlice";
+import {
+  getQuestionsForModule,
+  createQuestion,
+} from "../features/questions/questionSlice";
 import {
   getSectionAnalytics,
   reset as resetAnalytics,
 } from "../features/analytics/analyticsSlice";
-
 import {
   getGradingPreview,
   processSectionGrades,
   reset as resetGrading,
 } from "../features/grading/gradingSlice";
-
 import {
   getSectionDetails,
   reset as resetLearning,
 } from "../features/learning/learningSlice";
-import {
-  getModulesForSection,
-  createAndPublishModuleToSection,
-  reset as resetContent,
-  getLessonsForModule, // <-- usar action del slice para cargar lecciones
-} from "../features/content/contentSlice";
 import {
   getAssignmentsForSection,
   createAssignment,
@@ -43,6 +48,650 @@ import {
   reset as resetSubmissions,
 } from "../features/submissions/submissionSlice";
 import { updateApprovalCriteria } from "../features/sections/sectionSlice";
+
+const EMPTY_ARRAY = [];
+
+// ===================================================================================
+//  SUB-COMPONENTE: Modal para Ver y Calificar Entregas
+// ===================================================================================
+const SubmissionsViewerModal = ({ assignment, onClose }) => {
+  const dispatch = useDispatch();
+  const { submissions, isLoading } = useSelector((state) => state.submissions);
+  const [grade, setGrade] = useState("");
+  const [feedback, setFeedback] = useState("");
+  const [currentSubmissionId, setCurrentSubmissionId] = useState(null);
+
+  useEffect(() => {
+    if (assignment?.section && assignment?._id) {
+      dispatch(
+        getSubmissionsForAssignment({
+          sectionId: assignment.section,
+          assignmentId: assignment._id,
+        })
+      );
+    }
+    return () => {
+      dispatch(resetSubmissions());
+    };
+  }, [dispatch, assignment]);
+
+  const handleGrade = (submissionId) => {
+    const gradeData = { grade: Number(grade), feedback };
+    dispatch(gradeSubmission({ submissionId, gradeData }));
+    setCurrentSubmissionId(null);
+  };
+
+  const openGradingForm = (submission) => {
+    setCurrentSubmissionId(submission._id);
+    setGrade(submission.grade || "");
+    setFeedback(submission.feedback || "");
+  };
+
+  return (
+    <ModalOverlay isOpen={true} onClose={onClose}>
+      <div className="w-full max-w-3xl bg-card border border-border rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh]">
+        {/* Header */}
+        <div className="p-4 border-b border-border bg-muted/30 flex items-center justify-between">
+          <div>
+            <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
+              <FileText className="w-5 h-5 text-primary" />
+              Entregas: {assignment.title}
+            </h2>
+            <p className="text-sm text-muted-foreground">Revisión y calificación de estudiantes</p>
+          </div>
+          <Button variant="ghost" size="icon" onClick={onClose}>
+            <X className="w-5 h-5" />
+          </Button>
+        </div>
+
+        {/* Content */}
+        <div className="p-6 overflow-y-auto space-y-4">
+          {isLoading ? (
+             <div className="flex flex-col items-center justify-center py-10 space-y-4">
+               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+               <p className="text-muted-foreground">Cargando entregas...</p>
+             </div>
+          ) : submissions.length > 0 ? (
+            submissions.map((sub) => (
+              <Card key={sub._id} className="border border-border bg-card/50">
+                <CardHeader className="pb-2">
+                   <div className="flex justify-between items-start">
+                      <div>
+                        <h4 className="font-semibold text-foreground">{sub.student.name}</h4>
+                        <p className="text-xs text-muted-foreground">{sub.student.email}</p>
+                      </div>
+                      <div className={`px-2 py-1 rounded-full text-xs font-medium border ${sub.grade != null ? 'bg-green-500/10 text-green-600 border-green-500/20' : 'bg-yellow-500/10 text-yellow-600 border-yellow-500/20'}`}>
+                        {sub.grade != null ? `Nota: ${sub.grade}` : "Pendiente"}
+                      </div>
+                   </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="bg-muted/50 p-3 rounded-lg text-sm border border-border/50">
+                    <p className="font-medium text-xs text-muted-foreground mb-1">Respuesta del estudiante:</p>
+                    <p className="whitespace-pre-wrap">{sub.content}</p>
+                  </div>
+
+                  {/* Formulario de calificación */}
+                  {currentSubmissionId === sub._id ? (
+                    <div className="bg-primary/5 p-4 rounded-lg border border-primary/20 space-y-3 animate-in fade-in zoom-in-95 duration-200">
+                      <div className="grid grid-cols-4 gap-4">
+                        <div className="col-span-1">
+                          <Label className="text-xs">Nota (0-20)</Label>
+                          <Input
+                            type="number"
+                            value={grade}
+                            onChange={(e) => setGrade(e.target.value)}
+                            className="bg-card"
+                            autoFocus
+                          />
+                        </div>
+                        <div className="col-span-3">
+                          <Label className="text-xs">Feedback</Label>
+                          <Input
+                            value={feedback}
+                            onChange={(e) => setFeedback(e.target.value)}
+                            placeholder="Excelente trabajo..."
+                            className="bg-card"
+                          />
+                        </div>
+                      </div>
+                      <div className="flex justify-end gap-2">
+                        <Button size="sm" variant="ghost" onClick={() => setCurrentSubmissionId(null)}>Cancelar</Button>
+                        <Button size="sm" onClick={() => handleGrade(sub._id)}>Guardar</Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex justify-between items-center pt-2">
+                      <p className="text-sm text-muted-foreground italic">
+                        {sub.feedback ? `Feedback: "${sub.feedback}"` : "Sin feedback aun."}
+                      </p>
+                      <Button variant="outline" size="sm" onClick={() => openGradingForm(sub)}>
+                        {sub.grade != null ? "Editar Nota" : "Calificar"}
+                      </Button>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            ))
+          ) : (
+            <div className="text-center py-12 text-muted-foreground">
+              <Book className="w-12 h-12 mx-auto mb-3 opacity-20" />
+              <p>No hay entregas recibidas para esta tarea.</p>
+            </div>
+          )}
+        </div>
+      </div>
+    </ModalOverlay>
+  );
+};
+
+// ===================================================================================
+//  COMPONENTE: Modal para Crear Tarea
+// ===================================================================================
+const CreateAssignmentModal = ({ sectionId, isOpen, onClose }) => {
+  const dispatch = useDispatch();
+  const [title, setTitle] = useState("");
+  const [instructions, setInstructions] = useState("");
+  const { isLoading } = useSelector((state) => state.assignments);
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (title.trim()) {
+      dispatch(
+        createAssignment({ sectionId, assignmentData: { title, instructions } })
+      );
+      setTitle("");
+      setInstructions("");
+      onClose();
+    }
+  };
+
+  return (
+    <ModalOverlay isOpen={isOpen} onClose={onClose}>
+      <BlurFade inView delay={0.1}>
+        <Card className="w-full max-w-md shadow-xl rounded-3xl border-0 bg-card">
+          <CardHeader className="space-y-2 pb-4">
+            <CardTitle className="text-2xl font-semibold text-center text-foreground">
+              <Typewriter text={["Nueva Tarea"]} speed={150} />
+            </CardTitle>
+            <p className="text-sm text-center text-muted-foreground mt-1">
+              Asigna trabajo práctico a los estudiantes
+            </p>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label>Título</Label>
+                <Input
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder="Ej. Ensayo sobre Historia"
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Instrucciones</Label>
+                <textarea
+                  value={instructions}
+                  onChange={(e) => setInstructions(e.target.value)}
+                  placeholder="Detalla los requerimientos..."
+                  className="w-full px-3 py-2 border rounded-lg bg-background text-sm min-h-[100px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  required
+                />
+              </div>
+
+              <div className="flex justify-end gap-3 mt-6">
+                <Button type="button" variant="outline" onClick={onClose} className="w-full">Cancelar</Button>
+                <Button type="submit" disabled={isLoading} className="w-full">
+                  {isLoading ? "Creando..." : "Crear Tarea"}
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      </BlurFade>
+    </ModalOverlay>
+  );
+};
+
+// ===================================================================================
+//  PESTAÑA: GESTIÓN DE TAREAS (Estilizada)
+// ===================================================================================
+const AssignmentsTab = ({ sectionId }) => {
+  const dispatch = useDispatch();
+  const { assignments, isLoading } = useSelector((state) => state.assignments);
+  const [viewingSubmissionsFor, setViewingSubmissionsFor] = useState(null);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+
+  useEffect(() => {
+    if (sectionId) dispatch(getAssignmentsForSection(sectionId));
+    return () => {
+      dispatch(resetAssignments());
+    };
+  }, [dispatch, sectionId]);
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center py-12">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-semibold text-foreground">Tareas Asignadas</h2>
+          <p className="text-sm text-muted-foreground">Gestiona y evalúa las actividades de los estudiantes</p>
+        </div>
+        <Button onClick={() => setIsCreateModalOpen(true)} className="flex items-center gap-2">
+          <Plus size={18} /> Nueva Tarea
+        </Button>
+      </div>
+
+      {assignments.length > 0 ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {assignments.map((assignment, index) => (
+            <BlurFade key={assignment._id} delay={0.1 + index * 0.05} inView>
+              <Card className="h-full flex flex-col hover:border-primary/50 transition-all duration-300">
+                <CardHeader>
+                  <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center mb-3 text-primary">
+                    <FileText size={20} />
+                  </div>
+                  <CardTitle className="text-lg">{assignment.title}</CardTitle>
+                </CardHeader>
+                <CardContent className="flex-1">
+                  <p className="text-sm text-muted-foreground line-clamp-3">
+                    {assignment.instructions || "Sin instrucciones detalladas."}
+                  </p>
+                </CardContent>
+                <CardFooter className="pt-4 border-t border-border">
+                  <Button 
+                    variant="ghost" 
+                    className="w-full group" 
+                    onClick={() => setViewingSubmissionsFor(assignment)}
+                  >
+                    Ver Entregas 
+                    <ArrowLeft className="w-4 h-4 ml-2 rotate-180 group-hover:translate-x-1 transition-transform" />
+                  </Button>
+                </CardFooter>
+              </Card>
+            </BlurFade>
+          ))}
+        </div>
+      ) : (
+        <Card className="p-12 text-center bg-muted/20 border-dashed">
+          <div className="flex flex-col items-center">
+             <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
+                <FileText className="w-8 h-8 text-muted-foreground/50" />
+             </div>
+             <h3 className="text-lg font-semibold mb-2">No hay tareas creadas</h3>
+             <p className="text-muted-foreground mb-6 max-w-sm">
+               Crea tareas para que tus estudiantes puedan subir sus trabajos y recibir retroalimentación.
+             </p>
+             <Button variant="outline" onClick={() => setIsCreateModalOpen(true)}>
+               Crear primera tarea
+             </Button>
+          </div>
+        </Card>
+      )}
+
+      <CreateAssignmentModal
+        sectionId={sectionId}
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+      />
+
+      {viewingSubmissionsFor && (
+        <SubmissionsViewerModal
+          assignment={viewingSubmissionsFor}
+          onClose={() => setViewingSubmissionsFor(null)}
+        />
+      )}
+    </div>
+  );
+};
+
+// ===================================================================================
+//  PESTAÑA: CRITERIOS DE APROBACIÓN (Estilizada)
+// ===================================================================================
+const FinalGradingTab = ({ section }) => {
+  const dispatch = useDispatch();
+
+  const [criteria, setCriteria] = useState(
+    section.approvalCriteria || {
+      mastery: { required: false, minPercentage: 85 },
+      completion: { allAssignmentsRequired: false },
+    }
+  );
+
+  const { previewData, isLoading } = useSelector((state) => state.grading);
+
+  useEffect(() => {
+    dispatch(getGradingPreview(section._id));
+    return () => {
+      dispatch(resetGrading());
+    };
+  }, [dispatch, section._id]);
+
+  const handleMasteryChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setCriteria((prev) => ({
+      ...prev,
+      mastery: {
+        ...prev.mastery,
+        [name]: type === "checkbox" ? checked : Number(value),
+      },
+    }));
+  };
+
+  const handleCompletionChange = (e) => {
+    const { name, checked } = e.target;
+    setCriteria((prev) => ({
+      ...prev,
+      completion: {
+        ...prev.completion,
+        [name]: checked,
+      },
+    }));
+  };
+
+  const handleCriteriaSubmit = (e) => {
+    e.preventDefault();
+    dispatch(updateApprovalCriteria({ sectionId: section._id, criteriaData: criteria }))
+      .unwrap()
+      .then(() => {
+        dispatch(getGradingPreview(section._id));
+      })
+      .catch((error) => alert(error.message));
+  };
+
+  const handleProcessGrades = () => {
+    if (confirm("¿Confirmar cierre de actas y procesar notas finales?")) {
+      dispatch(processSectionGrades(section._id));
+    }
+  };
+
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {/* Columna Izquierda: Configuración */}
+      <div className="lg:col-span-1 space-y-6">
+        <Card className="border-primary/20 shadow-sm">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <Settings className="w-5 h-5 text-primary" />
+              Configuración
+            </CardTitle>
+            <CardDescription>Reglas para aprobar el curso</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleCriteriaSubmit} className="space-y-6">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <Label className="font-semibold text-base">Maestría</Label>
+                  <Book className="w-4 h-4 text-muted-foreground" />
+                </div>
+                <div className="bg-muted/30 p-3 rounded-lg border border-border space-y-3">
+                  <div className="flex items-center gap-3">
+                     <input
+                      type="checkbox"
+                      id="masteryRequired"
+                      name="required"
+                      checked={criteria.mastery?.required || false}
+                      onChange={handleMasteryChange}
+                      className="w-4 h-4 rounded border-primary text-primary focus:ring-primary"
+                    />
+                    <Label htmlFor="masteryRequired" className="cursor-pointer font-normal">Requerir nota mínima</Label>
+                  </div>
+                  
+                  {criteria.mastery?.required && (
+                    <div className="pl-7 animate-in slide-in-from-top-2 duration-200">
+                      <Label className="text-xs text-muted-foreground mb-1 block">Porcentaje Mínimo (%)</Label>
+                      <Input
+                        type="number"
+                        name="minPercentage"
+                        min="1"
+                        max="100"
+                        value={criteria.mastery?.minPercentage || 85}
+                        onChange={handleMasteryChange}
+                        className="h-8"
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <Label className="font-semibold text-base">Participación</Label>
+                  <FileText className="w-4 h-4 text-muted-foreground" />
+                </div>
+                <div className="bg-muted/30 p-3 rounded-lg border border-border">
+                  <div className="flex items-center gap-3">
+                     <input
+                      type="checkbox"
+                      id="allAssignmentsRequired"
+                      name="allAssignmentsRequired"
+                      checked={criteria.completion?.allAssignmentsRequired || false}
+                      onChange={handleCompletionChange}
+                      className="w-4 h-4 rounded border-primary text-primary focus:ring-primary"
+                    />
+                    <Label htmlFor="allAssignmentsRequired" className="cursor-pointer font-normal">
+                      Exigir todas las tareas
+                    </Label>
+                  </div>
+                </div>
+              </div>
+
+              <Button type="submit" className="w-full">
+                Guardar Reglas
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Columna Derecha: Vista Previa */}
+      <div className="lg:col-span-2 space-y-6">
+        <Card className="h-full flex flex-col">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <Eye className="w-5 h-5 text-primary" />
+              Vista Previa de Aprobación
+            </CardTitle>
+            <CardDescription>Simulación basada en los criterios actuales</CardDescription>
+          </CardHeader>
+          <CardContent className="flex-1">
+             {isLoading ? (
+                <div className="flex flex-col items-center justify-center h-40">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mb-2"></div>
+                  <p className="text-sm text-muted-foreground">Calculando...</p>
+                </div>
+             ) : (
+                <div className="rounded-md border overflow-hidden">
+                  <table className="w-full text-sm">
+                    <thead className="bg-muted/50">
+                      <tr className="border-b">
+                        <th className="px-4 py-3 text-left font-medium">Estudiante</th>
+                        <th className="px-4 py-3 text-left font-medium">Cumplimiento</th>
+                        <th className="px-4 py-3 text-right font-medium">Estado</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y">
+                      {previewData.map((student) => (
+                        <tr key={student.enrollmentId} className="bg-card hover:bg-muted/30 transition-colors">
+                          <td className="px-4 py-3 font-medium">{student.student.name}</td>
+                          <td className="px-4 py-3">
+                            <div className="flex flex-col gap-1">
+                              {student.checks.map((check, i) => (
+                                <span key={i} className={`text-xs flex items-center gap-1.5 ${check.isMet ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                                  {check.isMet ? <CheckCircle2 size={12}/> : <X size={12}/>}
+                                  {check.name}: {check.status}
+                                </span>
+                              ))}
+                            </div>
+                          </td>
+                          <td className="px-4 py-3 text-right">
+                             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                               student.finalStatus === "Aprobado" 
+                               ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400" 
+                               : "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
+                             }`}>
+                               {student.finalStatus}
+                             </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+             )}
+          </CardContent>
+          <CardFooter className="bg-muted/10 border-t pt-4">
+             <Button 
+                variant="destructive" 
+                onClick={handleProcessGrades} 
+                disabled={isLoading}
+                className="w-full sm:w-auto ml-auto"
+             >
+               {isLoading ? "Procesando..." : "Cerrar Actas Oficialmente"}
+             </Button>
+          </CardFooter>
+        </Card>
+      </div>
+    </div>
+  );
+};
+
+// ===================================================================================
+//  PESTAÑA: ANALÍTICAS (Estilizada)
+// ===================================================================================
+const AnalyticsTab = ({ sectionId }) => {
+  const dispatch = useDispatch();
+  const { analyticsData, isLoading } = useSelector((state) => state.analytics);
+
+  useEffect(() => {
+    dispatch(getSectionAnalytics(sectionId));
+    return () => {
+      dispatch(resetAnalytics());
+    };
+  }, [dispatch, sectionId]);
+
+  if (isLoading || !analyticsData) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20">
+         <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary mb-4"></div>
+         <p className="text-muted-foreground animate-pulse">Analizando datos del curso...</p>
+      </div>
+    );
+  }
+
+  const { masteryByModule, difficultQuestions, strugglingStudents } = analyticsData;
+
+  return (
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        
+        {/* Card 1: Maestría por Módulo */}
+        <BlurFade delay={0.1} inView>
+          <Card className="h-full border-l-4 border-l-primary shadow-sm">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base font-medium flex items-center gap-2 text-muted-foreground">
+                <BarChart3 className="w-4 h-4" /> Rendimiento Promedio
+              </CardTitle>
+              <h3 className="text-2xl font-bold text-foreground">Por Módulo</h3>
+            </CardHeader>
+            <CardContent>
+               <div className="space-y-4 mt-2">
+                  {masteryByModule.map((item, idx) => (
+                    <div key={idx} className="space-y-1">
+                      <div className="flex justify-between text-sm font-medium">
+                        <span>{item.moduleTitle}</span>
+                        <span>{item.averageMastery}%</span>
+                      </div>
+                      <div className="h-2 w-full bg-muted rounded-full overflow-hidden">
+                        <div 
+                          className="h-full bg-primary transition-all duration-500" 
+                          style={{ width: `${item.averageMastery}%` }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                  {masteryByModule.length === 0 && <p className="text-sm text-muted-foreground italic">No hay datos suficientes.</p>}
+               </div>
+            </CardContent>
+          </Card>
+        </BlurFade>
+
+        {/* Card 2: Alumnos en Riesgo */}
+        <BlurFade delay={0.2} inView>
+          <Card className="h-full border-l-4 border-l-red-500 shadow-sm">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base font-medium flex items-center gap-2 text-muted-foreground">
+                <AlertCircle className="w-4 h-4 text-red-500" /> Atención Requerida
+              </CardTitle>
+              <h3 className="text-2xl font-bold text-foreground">Alumnos en Riesgo</h3>
+            </CardHeader>
+            <CardContent>
+              {strugglingStudents.length > 0 ? (
+                <ul className="space-y-3 mt-2">
+                  {strugglingStudents.map((item) => (
+                    <li key={item._id} className="flex items-start gap-3 p-2 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-900/30">
+                      <div className="w-8 h-8 rounded-full bg-red-100 dark:bg-red-800 text-red-600 dark:text-white flex items-center justify-center text-xs font-bold shrink-0">
+                        {item.highestMasteryScore}%
+                      </div>
+                      <div>
+                        <p className="font-semibold text-sm">{item.student.name}</p>
+                        <p className="text-xs text-muted-foreground">Bajo rendimiento en: {item.module.title}</p>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <div className="flex flex-col items-center justify-center h-40 text-center">
+                  <CheckCircle2 className="w-12 h-12 text-green-500 mb-2 opacity-50" />
+                  <p className="text-sm text-muted-foreground">¡Excelente! Ningún alumno está en nivel crítico actualmente.</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </BlurFade>
+
+        {/* Card 3: Preguntas Difíciles */}
+        <BlurFade delay={0.3} inView>
+          <Card className="h-full border-l-4 border-l-yellow-500 shadow-sm">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base font-medium flex items-center gap-2 text-muted-foreground">
+                <Trophy className="w-4 h-4 text-yellow-500" /> Puntos de Dolor
+              </CardTitle>
+              <h3 className="text-2xl font-bold text-foreground">Preguntas Difíciles</h3>
+            </CardHeader>
+            <CardContent>
+               <div className="mt-2 space-y-3">
+                 {difficultQuestions.length > 0 ? difficultQuestions.map(([questionId, count], idx) => (
+                   <div key={idx} className="flex items-center justify-between p-3 rounded-lg bg-muted/40 border border-border">
+                      <div className="flex items-center gap-3">
+                        <span className="text-lg font-bold text-muted-foreground/50">#{idx + 1}</span>
+                        <div>
+                          <p className="text-xs font-mono text-muted-foreground">ID: {questionId.slice(-6)}...</p>
+                          <p className="text-xs text-red-500 font-medium">Fallada {count} veces</p>
+                        </div>
+                      </div>
+                   </div>
+                 )) : (
+                   <p className="text-sm text-muted-foreground italic">No hay suficientes datos de errores.</p>
+                 )}
+               </div>
+            </CardContent>
+          </Card>
+        </BlurFade>
+
+      </div>
+    </div>
+  );
+};
 
 // ===================================================================================
 //  MODAL OVERLAY COMPONENT (reutilizable)
@@ -63,13 +712,7 @@ const ModalOverlay = ({ isOpen, onClose, children }) => {
         style={modalStyles.modalContent}
         onClick={(e) => e.stopPropagation()}
       >
-        <button
-          onClick={onClose}
-          style={modalStyles.closeButton}
-          aria-label="Cerrar"
-        >
-          <X size={20} />
-        </button>
+        {/* Eliminado el botón X absoluto aquí porque ya lo controlamos dentro de los modales más complejos */}
         {children}
       </div>
     </div>,
@@ -104,6 +747,9 @@ const CreateModuleModal = ({ sectionId, isOpen, onClose }) => {
       <BlurFade inView delay={0.1}>
         <Card className="w-full max-w-md shadow-xl rounded-3xl border-0 bg-card">
           <CardHeader className="space-y-2 pb-4">
+            <div className="absolute top-4 right-4">
+               <Button variant="ghost" size="icon" onClick={onClose}><X size={18}/></Button>
+            </div>
             <CardTitle className="text-2xl font-semibold text-center text-foreground">
               <Typewriter text={["Crear Nuevo Módulo"]} speed={150} />
             </CardTitle>
@@ -117,7 +763,7 @@ const CreateModuleModal = ({ sectionId, isOpen, onClose }) => {
                 <Label className="text-sm font-medium text-foreground">
                   Título del Módulo
                 </Label>
-                <div className="flex items-center gap-2 border rounded-lg px-3 py-2.5 bg-card focus-within:ring-2">
+                <div className="flex items-center gap-2 border rounded-lg px-3 py-2.5 bg-card focus-within:ring-2 ring-primary/20">
                   <Input
                     type="text"
                     value={moduleTitle}
@@ -160,66 +806,38 @@ const CreateModuleModal = ({ sectionId, isOpen, onClose }) => {
 // ===================================================================================
 const CreateLessonModal = ({ moduleId, isOpen, onClose, onLessonCreated }) => {
   const dispatch = useDispatch();
-  const { user } = useSelector((state) => state.auth); // ✅ ARREGLADO: Obtener usuario desde Redux
+  const { isLoading } = useSelector((state) => state.content);
+
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
-  const [contentType, setContentType] = useState("text");
+  const [contentType, setContentType] = useState("text"); 
   const [fileUrl, setFileUrl] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setIsLoading(true);
 
     try {
-      // Obtener el token desde Redux store (usuario autenticado)
-      const token = user?.token || localStorage.getItem("token");
-      
-      if (!token) {
-        throw new Error("No se encontró el token de autenticación. Por favor, inicia sesión nuevamente.");
-      }
-      
       const lessonData = {
         title,
         content,
-        contentType,
+        contentType, 
+        fileUrl: fileUrl.trim() || null,
       };
 
-      // Solo incluir fileUrl si tiene valor
-      if (fileUrl.trim()) {
-        lessonData.fileUrl = fileUrl;
-      }
+      await dispatch(createLessonInModule({ moduleId, lessonData })).unwrap();
 
-      // Hacer la petición usando el patrón correcto
-      const response = await fetch(`/api/modules/${moduleId}/lessons`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        credentials: "include",
-        body: JSON.stringify(lessonData),
-      });
+      if (onLessonCreated) onLessonCreated();
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Error al crear la lección");
-      }
-
-      const newLesson = await response.json();
-      onLessonCreated(newLesson);
-      
-      // Resetear formulario
       setTitle("");
       setContent("");
       setContentType("text");
       setFileUrl("");
       onClose();
+
     } catch (error) {
-      console.error("Error:", error);
-      alert("Error al crear la lección: " + error.message);
-    } finally {
-      setIsLoading(false);
+      console.error("Error creando lección:", error);
+      const msg = error?.message || "Error desconocido";
+      alert(`Error del servidor: ${msg}`);
     }
   };
 
@@ -227,90 +845,65 @@ const CreateLessonModal = ({ moduleId, isOpen, onClose, onLessonCreated }) => {
     <ModalOverlay isOpen={isOpen} onClose={onClose}>
       <BlurFade inView delay={0.1}>
         <Card className="w-full max-w-md shadow-xl rounded-3xl border-0 bg-card">
-          <CardHeader className="space-y-2 pb-4">
+          <CardHeader className="space-y-2 pb-4 relative">
+            <Button variant="ghost" size="icon" onClick={onClose} className="absolute top-0 right-0"><X size={18}/></Button>
             <CardTitle className="text-2xl font-semibold text-center text-foreground">
               <Typewriter text={["Crear Nueva Lección"]} speed={150} />
             </CardTitle>
-            <p className="text-sm text-center text-muted-foreground mt-1">
-              Añade contenido educativo al módulo
-            </p>
           </CardHeader>
           <CardContent className="space-y-4">
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label className="text-sm font-medium text-foreground">
-                  Título de la Lección
-                </Label>
+                <Label>Título</Label>
                 <Input
-                  type="text"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  placeholder="Ej. Variables y Tipos de Datos"
+                  placeholder="Ej. Introducción a React"
                   required
-                  className="w-full"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label className="text-sm font-medium text-foreground">
-                  Tipo de Contenido
-                </Label>
+                <Label>Tipo de Recurso</Label>
                 <select
                   value={contentType}
                   onChange={(e) => setContentType(e.target.value)}
-                  className="w-full px-3 py-2 border rounded-lg bg-card text-foreground"
+                  className="w-full px-3 py-2 border rounded-lg bg-background text-foreground text-sm"
                 >
-                  <option value="text">Texto</option>
-                  <option value="video">Video</option>
-                  <option value="pdf">PDF</option>
-                  <option value="link">Enlace</option>
+                  <option value="text">Solo Texto</option>
+                  <option value="video_url">Video (URL)</option>
+                  <option value="document_url">Documento (PDF/Word)</option>
+                  <option value="slides_url">Presentación (Slides)</option>
                 </select>
               </div>
 
               <div className="space-y-2">
-                <Label className="text-sm font-medium text-foreground">
-                  Contenido
-                </Label>
+                <Label>Descripción / Contenido</Label>
                 <textarea
                   value={content}
                   onChange={(e) => setContent(e.target.value)}
-                  placeholder="Escribe el contenido de la lección..."
-                  className="w-full px-3 py-2.5 border rounded-lg bg-card text-foreground focus-visible:ring-2 focus-visible:outline-none min-h-[120px]"
+                  className="w-full px-3 py-2.5 border rounded-lg bg-background text-foreground min-h-[100px] text-sm"
                   required
                 />
               </div>
 
-              {(contentType === "video" || contentType === "pdf" || contentType === "link") && (
+              {contentType !== "text" && (
                 <div className="space-y-2">
-                  <Label className="text-sm font-medium text-foreground">
-                    URL del Archivo/Recurso
-                  </Label>
+                  <Label>Enlace del Recurso</Label>
                   <Input
                     type="url"
                     value={fileUrl}
                     onChange={(e) => setFileUrl(e.target.value)}
                     placeholder="https://..."
-                    className="w-full"
+                    required
                   />
                 </div>
               )}
 
               <div className="flex justify-end gap-3 mt-6">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={onClose}
-                  className="w-full"
-                >
-                  Cancelar
-                </Button>
-                <Button
-                  type="submit"
-                  variant="default"
-                  disabled={isLoading}
-                  className="w-full py-2"
-                >
-                  {isLoading ? "Creando..." : "Crear Lección"}
+                <Button type="button" variant="outline" onClick={onClose}>Cancelar</Button>
+                <Button type="submit" variant="default" disabled={isLoading}>
+                  {isLoading ? "Guardando..." : "Crear Lección"}
                 </Button>
               </div>
             </form>
@@ -322,161 +915,120 @@ const CreateLessonModal = ({ moduleId, isOpen, onClose, onLessonCreated }) => {
 };
 
 // ===================================================================================
-//  COMPONENTE: Modal para Crear Pregunta en un módulo (NUEVO)
+//  COMPONENTE: Modal para Crear Pregunta
 // ===================================================================================
-const CreateQuestionModal = ({ moduleId, isOpen, onClose, onQuestionCreated }) => {
+const CreateQuestionModal = ({ moduleId, isOpen, onClose }) => {
   const dispatch = useDispatch();
-  const { user } = useSelector((state) => state.auth || {});
+  const { isLoading } = useSelector((state) => state.questions);
+  
   const [questionText, setQuestionText] = useState("");
-  const [optionsText, setOptionsText] = useState(""); // cada línea = una opción
+  const [optionsText, setOptionsText] = useState("");
   const [correctIndex, setCorrectIndex] = useState(0);
-  const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setIsLoading(true);
 
     try {
-      const token = user?.token || localStorage.getItem("token");
-      if (!token) {
-        throw new Error("No autenticado. Por favor inicia sesión.");
-      }
-
-      // Parsear opciones: separar por saltos de línea y limpiar espacios
-      const options = optionsText
+      const rawOptions = optionsText
         .split("\n")
         .map((o) => o.trim())
         .filter((o) => o.length > 0);
 
-      if (options.length < 2) {
-        throw new Error("Necesitas al menos 2 opciones.");
-      }
+      if (rawOptions.length < 2) throw new Error("Mínimo 2 opciones requeridas.");
+      if (correctIndex >= rawOptions.length) throw new Error("Selección correcta inválida.");
 
-      if (correctIndex < 0 || correctIndex >= options.length) {
-        throw new Error("Índice de opción correcta inválido.");
-      }
+      const formattedOptions = rawOptions.map((text, index) => ({
+        text: text,
+        isCorrect: index === correctIndex
+      }));
 
-      const payload = {
+      const questionData = {
         questionText,
-        options,
-        correctAnswer: options[correctIndex],
-        difficulty: "medium", // o lo puedes hacer dinámico si quieres
+        options: formattedOptions,
+        difficulty: 1, 
       };
 
-      const res = await fetch(`/api/modules/${moduleId}/questions`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        credentials: "include",
-        body: JSON.stringify(payload),
-      });
+      await dispatch(createQuestion({ moduleId, questionData })).unwrap();
 
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.message || "Error creando pregunta");
-      }
-
-      const newQuestion = await res.json();
-      onQuestionCreated(newQuestion);
-
-      // Limpiar formulario
       setQuestionText("");
       setOptionsText("");
       setCorrectIndex(0);
       onClose();
+
     } catch (error) {
-      console.error("Error:", error);
-      alert("Error creando pregunta: " + (error.message || error));
-    } finally {
-      setIsLoading(false);
+      console.error("Error creando pregunta:", error);
+      const msg = error?.message || (typeof error === 'string' ? error : "Error desconocido");
+      alert(`Error del servidor: ${msg}`);
     }
   };
+
+  const currentOptions = optionsText
+    .split("\n")
+    .map((o) => o.trim())
+    .filter((o) => o.length > 0);
 
   return (
     <ModalOverlay isOpen={isOpen} onClose={onClose}>
       <BlurFade inView delay={0.1}>
         <Card className="w-full max-w-md shadow-xl rounded-3xl border-0 bg-card">
-          <CardHeader className="space-y-2 pb-4">
+          <CardHeader className="space-y-2 pb-4 relative">
+            <Button variant="ghost" size="icon" onClick={onClose} className="absolute top-0 right-0"><X size={18}/></Button>
             <CardTitle className="text-2xl font-semibold text-center text-foreground">
-              <Typewriter text={["Crear Nueva Pregunta"]} speed={150} />
+              <Typewriter text={["Nueva Pregunta"]} speed={150} />
             </CardTitle>
             <p className="text-sm text-center text-muted-foreground mt-1">
-              Añade una pregunta al banco del módulo
+              Agrega una pregunta al banco del módulo
             </p>
           </CardHeader>
           <CardContent className="space-y-4">
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label className="text-sm font-medium text-foreground">
-                  Texto de la Pregunta
-                </Label>
+                <Label>Enunciado</Label>
                 <textarea
                   value={questionText}
                   onChange={(e) => setQuestionText(e.target.value)}
-                  placeholder="Ej. ¿Cuál es la capital de Francia?"
+                  placeholder="¿Cuál es la capital de Perú?"
                   required
-                  className="w-full px-3 py-2.5 border rounded-lg bg-card text-foreground focus-visible:ring-2 focus-visible:outline-none min-h-[80px]"
+                  className="w-full px-3 py-2.5 border rounded-lg bg-background text-foreground min-h-[80px] text-sm"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label className="text-sm font-medium text-foreground">
-                  Opciones (una por línea)
-                </Label>
+                <Label>Opciones (una por línea)</Label>
                 <textarea
                   value={optionsText}
                   onChange={(e) => setOptionsText(e.target.value)}
-                  placeholder={"París\nLondres\nBerlín\nMadrid"}
+                  placeholder={"Lima\nArequipa\nCusco"}
                   required
-                  className="w-full px-3 py-2.5 border rounded-lg bg-card text-foreground focus-visible:ring-2 focus-visible:outline-none min-h-[100px]"
+                  className="w-full px-3 py-2.5 border rounded-lg bg-background text-foreground min-h-[100px] text-sm"
                 />
-                <p className="text-xs text-muted-foreground">
-                  Escribe cada opción en una línea separada
-                </p>
               </div>
 
               <div className="space-y-2">
-                <Label className="text-sm font-medium text-foreground">
-                  Selecciona la Opción Correcta
-                </Label>
+                <Label>Respuesta Correcta</Label>
                 <select
                   value={correctIndex}
                   onChange={(e) => setCorrectIndex(Number(e.target.value))}
-                  className="w-full px-3 py-2 border rounded-lg bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="w-full px-3 py-2 border rounded-lg bg-background text-foreground text-sm"
                 >
-                  {optionsText
-                    .split("\n")
-                    .map((o) => o.trim())
-                    .filter((o) => o.length > 0)
-                    .map((option, idx) => (
+                  {currentOptions.length > 0 ? (
+                    currentOptions.map((opt, idx) => (
                       <option key={idx} value={idx}>
-                        {idx + 1}. {option}
+                        {idx + 1}. {opt}
                       </option>
-                    ))}
+                    ))
+                  ) : (
+                    <option disabled>Escribe opciones primero...</option>
+                  )}
                 </select>
-                <p className="text-xs text-muted-foreground">
-                  Usa el índice (0, 1, 2, etc.) para indicar cuál es la opción correcta
-                </p>
               </div>
 
               <div className="flex justify-end gap-3 mt-6">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={onClose}
-                  className="w-full"
-                >
+                <Button type="button" variant="outline" onClick={onClose}>
                   Cancelar
                 </Button>
-                <Button
-                  type="submit"
-                  variant="default"
-                  disabled={isLoading}
-                  className="w-full py-2"
-                >
-                  {isLoading ? "Creando..." : "Crear Pregunta"}
+                <Button type="submit" variant="default" disabled={isLoading}>
+                  {isLoading ? "Guardando..." : "Crear Pregunta"}
                 </Button>
               </div>
             </form>
@@ -488,59 +1040,47 @@ const CreateQuestionModal = ({ moduleId, isOpen, onClose, onQuestionCreated }) =
 };
 
 // ===================================================================================
-//  COMPONENTE: Item de Módulo con Lecciones y Banco de Preguntas (ACTUALIZADO)
+//  COMPONENTE: Item de Módulo (Igual que antes)
 // ===================================================================================
 const ModuleItemWithLessons = ({ module, index }) => {
   const dispatch = useDispatch();
   const [isExpanded, setIsExpanded] = useState(false);
   const [isCreateLessonOpen, setIsCreateLessonOpen] = useState(false);
   const [isCreateQuestionOpen, setIsCreateQuestionOpen] = useState(false);
-  const [questions, setQuestions] = useState(module?.questionBank ? [...module.questionBank] : []);
 
-  // tomar lecciones desde el slice content.lessonsByModule
-  const lessonsFromStore = useSelector((state) => state.content?.lessonsByModule?.[module._id] || []);
+  const lessonsFromStore = useSelector((state) => 
+    state.content?.lessonsByModule?.[module._id] || EMPTY_ARRAY
+  );
   const isLoadingLessons = useSelector((state) => state.content?.loadingLessons?.[module._id]) || false;
 
-  useEffect(() => {
-    // si el prop module.questionBank cambia, sincronizar
-    if (module?.questionBank) setQuestions([...module.questionBank]);
-  }, [module?.questionBank]);
+  const { questionsByModule, isLoading: isLoadingQuestions } = useSelector((state) => state.questions);
+  const questions = questionsByModule[module._id] || [];
 
   const handleToggleExpand = () => {
-    // al expandir, pedir lecciones a través del action creator
     if (!isExpanded) {
       dispatch(getLessonsForModule(module._id));
+      if (!questionsByModule[module._id]) {
+        dispatch(getQuestionsForModule(module._id));
+      }
     }
     setIsExpanded(!isExpanded);
   };
 
-  const handleLessonCreated = (newLesson) => {
-    // refrescar lecciones desde el servidor / store para mantener coherencia
+  const handleLessonCreated = () => {
     dispatch(getLessonsForModule(module._id));
-  };
-
-  const handleQuestionCreated = (newQuestion) => {
-    // Añadir localmente la pregunta para verla inmediatamente
-    setQuestions((prev) => [...prev, newQuestion]);
   };
 
   return (
     <Card className="overflow-hidden border border-border hover:border-primary/50 transition-colors duration-200 bg-card">
       <div className="p-5">
         <div className="flex items-start gap-4">
-          {/* Module Number Badge */}
           <div className="flex-shrink-0 w-12 h-12 rounded-full bg-primary/10 dark:bg-primary/20 flex items-center justify-center">
-            <span className="text-lg font-bold text-primary">
-              {index + 1}
-            </span>
+            <span className="text-lg font-bold text-primary">{index + 1}</span>
           </div>
 
-          {/* Module Content */}
           <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between mb-2">
-              <h3 className="text-lg font-semibold text-foreground">
-                {module.title}
-              </h3>
+              <h3 className="text-lg font-semibold text-foreground">{module.title}</h3>
               <div className="flex items-center gap-2">
                 <Button
                   variant="ghost"
@@ -563,77 +1103,55 @@ const ModuleItemWithLessons = ({ module, index }) => {
               </div>
             </div>
 
-            {/* Expanded Content: Lecciones y Banco de Preguntas */}
             {isExpanded && (
               <div className="mt-4 space-y-4">
-                {/* Sección de Lecciones */}
+                {/* Lecciones */}
                 <div className="pl-4 border-l-2 border-primary/30">
                   <div className="flex items-center gap-2 mb-3">
                     <FileText size={16} className="text-primary" />
                     <h4 className="font-medium text-foreground">Lecciones</h4>
                   </div>
-                  
                   {isLoadingLessons ? (
-                    <p className="text-sm text-muted-foreground pl-4">Cargando lecciones...</p>
-                  ) : lessonsFromStore && lessonsFromStore.length > 0 ? (
+                     <p className="text-sm text-muted-foreground pl-4">Cargando lecciones...</p>
+                  ) : lessonsFromStore.length > 0 ? (
                     <div className="space-y-3 pl-4">
                       {lessonsFromStore.map((lesson) => (
-                        <div
-                          key={lesson._id}
-                          className="flex items-start gap-3 p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors"
-                        >
-                          <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                            <FileText size={14} className="text-primary" />
-                          </div>
-                          <div className="flex-1">
-                            <h5 className="font-medium text-foreground text-sm">
-                              {lesson.title}
-                            </h5>
-                            <p className="text-xs text-muted-foreground mt-1">
-                              Tipo: {lesson.contentType}
-                            </p>
-                            {lesson.content && (
-                              <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
-                                {lesson.content}
-                              </p>
-                            )}
+                        <div key={lesson._id} className="flex items-start gap-3 p-3 rounded-lg bg-muted/30">
+                          <FileText size={14} className="text-primary mt-1" />
+                          <div>
+                            <h5 className="font-medium text-sm">{lesson.title}</h5>
+                            <p className="text-xs text-muted-foreground">{lesson.contentType}</p>
                           </div>
                         </div>
                       ))}
                     </div>
                   ) : (
-                    <div className="text-center py-4 pl-4">
-                      <p className="text-sm text-muted-foreground mb-2">
-                        No hay lecciones en este módulo
-                      </p>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setIsCreateLessonOpen(true)}
-                        className="flex items-center gap-1 mx-auto"
-                      >
-                        <Plus size={14} />
-                        Crear Primera Lección
-                      </Button>
-                    </div>
+                    <p className="text-sm text-muted-foreground pl-4">No hay lecciones.</p>
                   )}
                 </div>
 
-                {/* Sección de Banco de Preguntas */}
+                {/* Preguntas */}
                 <div className="pl-4 border-l-2 border-primary/30">
                   <div className="flex items-center gap-2 mb-3">
                     <Book size={16} className="text-primary" />
                     <h4 className="font-medium text-foreground">Banco de Preguntas</h4>
                   </div>
 
-                  {questions && questions.length > 0 ? (
+                  {isLoadingQuestions && !questions.length ? (
+                    <div className="pl-4 space-y-2">
+                        <div className="h-10 w-full bg-muted animate-pulse rounded"></div>
+                    </div>
+                  ) : questions.length > 0 ? (
                     <div className="space-y-2 pl-4">
-                      {questions.map((question, qIndex) => (
+                      {questions.map((question) => (
                         <div
-                          key={question._id || qIndex}
+                          key={question._id}
                           className="p-3 rounded-lg border border-border bg-card/50 hover:bg-accent/30 transition-colors"
                         >
                           <p className="text-sm text-foreground">{question.questionText}</p>
+                           <div className="mt-1 text-xs text-muted-foreground">
+                              Correcta: {question.options?.find(o => o.isCorrect)?.text || "N/A"}
+                           </div>
                         </div>
                       ))}
                     </div>
@@ -643,7 +1161,6 @@ const ModuleItemWithLessons = ({ module, index }) => {
                     </p>
                   )}
 
-                  {/* Botón para añadir preguntas */}
                   <div className="pt-3 pl-4">
                     <Button 
                       variant="outline" 
@@ -663,7 +1180,6 @@ const ModuleItemWithLessons = ({ module, index }) => {
         </div>
       </div>
 
-      {/* Create Lesson Modal */}
       <CreateLessonModal
         moduleId={module._id}
         isOpen={isCreateLessonOpen}
@@ -671,12 +1187,10 @@ const ModuleItemWithLessons = ({ module, index }) => {
         onLessonCreated={handleLessonCreated}
       />
 
-      {/* Create Question Modal */}
       <CreateQuestionModal
         moduleId={module._id}
         isOpen={isCreateQuestionOpen}
         onClose={() => setIsCreateQuestionOpen(false)}
-        onQuestionCreated={handleQuestionCreated}
       />
     </Card>
   );
@@ -709,7 +1223,6 @@ const ModulesTab = ({ sectionId }) => {
 
   return (
     <div className="space-y-6">
-      {/* Header Section */}
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-semibold text-foreground">Módulos del Curso</h2>
@@ -727,7 +1240,6 @@ const ModulesTab = ({ sectionId }) => {
         </Button>
       </div>
 
-      {/* Modules List */}
       {modules.length > 0 ? (
         <div className="space-y-4">
           {modules.map((module, index) => (
@@ -747,7 +1259,7 @@ const ModulesTab = ({ sectionId }) => {
                 No hay módulos aún
               </h3>
               <p className="text-sm text-muted-foreground mb-4">
-                Este curso aún no tiene módulos publicados. Crea el primer módulo para comenzar a estructurar el contenido educativo.
+                Este curso aún no tiene módulos publicados. Crea el primer módulo.
               </p>
               <Button
                 onClick={() => setIsCreateModalOpen(true)}
@@ -762,7 +1274,6 @@ const ModulesTab = ({ sectionId }) => {
         </Card>
       )}
 
-      {/* Create Module Modal */}
       <CreateModuleModal
         sectionId={sectionId}
         isOpen={isCreateModalOpen}
@@ -791,13 +1302,17 @@ const SectionManagementPage = () => {
   }, [dispatch, sectionId]);
 
   if (isLoadingSection || !section) {
-    return <h1>Cargando datos de la sección...</h1>;
+    return (
+      <div className="flex justify-center items-center h-screen bg-background">
+         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
+    );
   }
 
   return (
-    <div className="container mx-auto px-2 py-2">
+    <div className="container mx-auto px-4 py-6 max-w-7xl">
       <BlurFade inView delay={0.1}>
-        <div className="mb-6">
+        <div className="mb-8">
           <Button asChild variant="outline" size="sm" className="mb-4">
             <Link to="/dashboard">
               <ArrowLeft className="h-4 w-4 mr-2" />
@@ -805,222 +1320,92 @@ const SectionManagementPage = () => {
             </Link>
           </Button>
 
-          <div className="flex items-start gap-4">
-            <div className="bg-card/50 p-2.5 rounded-lg flex-shrink-0">
-              <GraduationCap className="w-6 h-6 text-primary" />
+          <div className="flex flex-col md:flex-row items-start gap-6 border-b pb-6">
+            <div className="bg-gradient-to-br from-primary/20 to-primary/5 p-4 rounded-2xl flex-shrink-0 border border-primary/10">
+              <GraduationCap className="w-10 h-10 text-primary" />
             </div>
-            <div className="flex-1">
-              <h1 className="text-3xl font-bold">
-                Gestionando: {section.course.title}
+            <div className="flex-1 space-y-2">
+              <h1 className="text-4xl font-bold tracking-tight text-foreground">
+                {section.course.title}
               </h1>
-              <p className="text-sm text-muted-foreground mt-1">
-                Sección {section.sectionCode} • Prof.{" "}
-                {section.instructor?.name || "-"}
-              </p>
-              {section.course?.syllabus && (
-                <a
-                  href={`http://localhost:5000${section.course.syllabus}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-sm text-primary hover:underline inline-block mt-2"
-                >
-                  Ver Sílabus Oficial
-                </a>
-              )}
+              <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
+                <span className="flex items-center gap-1.5 bg-muted px-2 py-1 rounded-md">
+                   <Users size={14}/> Sección {section.sectionCode}
+                </span>
+                <span className="flex items-center gap-1.5 bg-muted px-2 py-1 rounded-md">
+                   <GraduationCap size={14}/> Prof. {section.instructor?.name || "-"}
+                </span>
+                {section.course?.syllabus && (
+                  <a
+                    href={`http://localhost:5000${section.course.syllabus}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1 text-primary hover:underline font-medium"
+                  >
+                    <FileText size={14} /> Ver Sílabus
+                  </a>
+                )}
+              </div>
             </div>
           </div>
         </div>
       </BlurFade>
 
-      <div className="mb-6">
-        <div className="flex flex-wrap gap-2">
-          <button
-            onClick={() => setActiveTab("modules")}
-            className={`px-3 py-2 rounded-md ${
-              activeTab === "modules"
-                ? "bg-primary text-primary-foreground"
-                : "bg-card/50 text-foreground"
-            }`}
-          >
-            Módulos y Contenido
-          </button>
-          <button
-            onClick={() => setActiveTab("assignments")}
-            className={`px-3 py-2 rounded-md ${
-              activeTab === "assignments"
-                ? "bg-primary text-primary-foreground"
-                : "bg-card/50 text-foreground"
-            }`}
-          >
-            Tareas
-          </button>
-          <button
-            onClick={() => setActiveTab("grading")}
-            className={`px-3 py-2 rounded-md ${
-              activeTab === "grading"
-                ? "bg-primary text-primary-foreground"
-                : "bg-card/50 text-foreground"
-            }`}
-          >
-            Criterios de Aprobación
-          </button>
-          <button
-            onClick={() => setActiveTab("analytics")}
-            className={`px-3 py-2 rounded-md ${
-              activeTab === "analytics"
-                ? "bg-primary text-primary-foreground"
-                : "bg-card/50 text-foreground"
-            }`}
-          >
-            Analíticas
-          </button>
+      <div className="mb-6 overflow-x-auto pb-2">
+        <div className="flex space-x-1 min-w-max border-b border-border">
+          {[
+            { id: "modules", label: "Contenido", icon: Book },
+            { id: "assignments", label: "Tareas", icon: FileText },
+            { id: "grading", label: "Aprobación", icon: Settings },
+            { id: "analytics", label: "Analíticas", icon: BarChart3 }
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors duration-200 ${
+                activeTab === tab.id
+                  ? "border-primary text-primary"
+                  : "border-transparent text-muted-foreground hover:text-foreground hover:border-border"
+              }`}
+            >
+              <tab.icon size={16} />
+              {tab.label}
+            </button>
+          ))}
         </div>
       </div>
 
-      <div>
-        {activeTab === "modules" && (
-          <Card className="mb-4">
-            <CardHeader>
-              <CardTitle>Módulos y Contenido</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ModulesTab sectionId={section._id} />
-            </CardContent>
-          </Card>
-        )}
-
-        {activeTab === "assignments" && (
-          <Card className="mb-4">
-            <CardHeader>
-              <CardTitle>Gestión de Tareas</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <AssignmentsTab sectionId={section._id} />
-            </CardContent>
-          </Card>
-        )}
-
-        {activeTab === "grading" && (
-          <Card className="mb-4">
-            <CardHeader>
-              <CardTitle>Criterios de Aprobación</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <FinalGradingTab section={section} />
-            </CardContent>
-          </Card>
-        )}
-
-        {activeTab === "analytics" && (
-          <Card className="mb-4">
-            <CardHeader>
-              <CardTitle>Analíticas</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <AnalyticsTab sectionId={section._id} />
-            </CardContent>
-          </Card>
-        )}
+      <div className="min-h-[500px] animate-in fade-in slide-in-from-bottom-2 duration-300">
+        {activeTab === "modules" && <ModulesTab sectionId={section._id} />}
+        {activeTab === "assignments" && <AssignmentsTab sectionId={section._id} />}
+        {activeTab === "grading" && <FinalGradingTab section={section} />}
+        {activeTab === "analytics" && <AnalyticsTab sectionId={section._id} />}
       </div>
     </div>
   );
 };
 
-// --- Estilos del Modal ---
+// --- Estilos Base para Modal Overlay ---
 const modalStyles = {
   overlay: {
     position: "fixed",
     inset: 0,
     width: "100vw",
     height: "100vh",
-    backgroundColor: "rgba(0, 0, 0, 0.35)",
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    zIndex: 1009,
-    backdropFilter: "blur(2px)",
+    zIndex: 50,
+    backdropFilter: "blur(4px)",
   },
-
   modalContent: {
     position: "relative",
-    backgroundColor: "transparent",
-    borderRadius: "20px",
-    padding: "20px",
-    width: "90%",
-    maxWidth: "480px",
-    maxHeight: "90vh",
-    overflowY: "auto",
-    boxShadow: "0px 8px 25px rgba(0,0,0,0.22)",
-    zIndex: 10000,
-  },
-
-  closeButton: {
-    position: "absolute",
-    top: "10px",
-    right: "10px",
-    background: "transparent",
-    border: "none",
-    cursor: "pointer",
-    padding: "8px",
-    borderRadius: "50%",
-  },
-};
-
-// --- Estilos ---
-const styles = {
-  card: {
-    border: "1px solid #ddd",
-    padding: "15px",
-    margin: "10px 0",
-    borderRadius: "5px",
-  },
-  formContainer: {
-    border: "2px dashed #ccc",
-    padding: "20px",
-    marginTop: "30px",
-    borderRadius: "5px",
-  },
-  formGroup: { marginBottom: "15px" },
-  input: {
     width: "100%",
-    padding: "8px",
-    marginTop: "5px",
-    boxSizing: "border-box",
-  },
-  nav: {
-    marginBottom: "20px",
-    borderBottom: "1px solid #ccc",
-    paddingBottom: "10px",
-  },
-  navButton: {
-    marginRight: "10px",
-    padding: "8px 12px",
-    border: "1px solid transparent",
-    background: "none",
-    cursor: "pointer",
-    borderBottom: "2px solid transparent",
-  },
-  activeNavButton: { fontWeight: "bold", borderBottom: "2px solid #007bff" },
-  modalOverlay: {
-    position: "fixed",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: "rgba(0, 0, 0, 0.7)",
+    maxWidth: "fit-content",
     display: "flex",
-    alignItems: "center",
     justifyContent: "center",
-    zIndex: 1000,
-  },
-  modalContent: {
-    background: "white",
-    padding: "25px",
-    borderRadius: "8px",
-    width: "90%",
-    maxWidth: "800px",
-    position: "relative",
-  },
+  }
 };
 
 export default SectionManagementPage;

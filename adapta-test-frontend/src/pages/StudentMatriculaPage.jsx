@@ -1,5 +1,8 @@
 import { useState, useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
+import { BlurFade } from "../components/ui/blur-fade";
+import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
+import { Book, X } from "lucide-react";
 
 // --- Acciones de Redux ---
 import {
@@ -30,7 +33,6 @@ const CourseSectionsViewer = ({ course }) => {
   }, [dispatch, course._id]);
 
   const handleSelectSection = (section) => {
-    // Añadimos el título del curso al objeto de la sección para mostrarlo fácilmente en el resumen
     dispatch(
       addSection({ ...section, courseTitle: course.title, course: course._id })
     );
@@ -40,40 +42,36 @@ const CourseSectionsViewer = ({ course }) => {
   const isCourseInCart = !!selectedSections[course._id];
 
   if (isLoading)
-    return <p style={{ padding: "20px" }}>Buscando secciones disponibles...</p>;
+    return <p className="p-5 text-sm text-muted-foreground">Buscando secciones disponibles...</p>;
 
   return (
-    <div style={{ padding: "10px 20px", background: "#f9f9f9" }}>
+    <div className="p-4 bg-card rounded-b-lg">
       {sections && sections.length > 0 ? (
         sections.map((section) => (
           <div
             key={section._id}
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              padding: "10px 0",
-              borderBottom: "1px solid #eee",
-            }}
+            className="flex justify-between items-center py-3 border-b last:border-b-0 border-slate-200 dark:border-zinc-800"
           >
-            <div>
-              <strong>Sección {section.sectionCode}</strong>
-              <span style={{ marginLeft: "15px", color: "#555" }}>
-                Profesor: {section.instructor.name}
-              </span>
+            <div className="text-sm">
+              <strong className="text-foreground">Sección {section.sectionCode}</strong>
+              <span className="ml-4 text-muted-foreground">Profesor: {section.instructor?.name || "-"}</span>
             </div>
             <button
               onClick={() => handleSelectSection(section)}
               disabled={isCourseInCart}
+              className={`px-3 py-1 rounded-md text-sm ${
+                isCourseInCart
+                  ? "bg-muted text-muted-foreground cursor-not-allowed opacity-60"
+                  : "bg-primary text-primary-foreground hover:brightness-95"
+              }`}
             >
               {isCourseInCart ? "Seleccionado" : "Añadir a Matrícula"}
             </button>
           </div>
         ))
       ) : (
-        <p style={{ padding: "10px 0" }}>
-          No hay secciones abiertas para este curso en el ciclo académico
-          actual.
+        <p className="py-2 text-sm text-muted-foreground">
+          No hay secciones abiertas para este curso en el ciclo académico actual.
         </p>
       )}
     </div>
@@ -106,39 +104,22 @@ const MatriculaSummary = () => {
   };
 
   return (
-    <div
-      style={{
-        border: "2px solid #007bff",
-        padding: "20px",
-        borderRadius: "8px",
-        background: "#f8f9fa",
-      }}
-    >
-      <h3>Resumen de tu Matrícula</h3>
+    <div className="border-2 border-primary p-4 rounded-lg bg-muted">
+      <h3 className="text-lg font-medium text-foreground mb-3">Resumen de tu Matrícula</h3>
+
       {sectionsArray.length > 0 ? (
-        <ul style={{ listStyleType: "none", paddingLeft: 0 }}>
+        <ul className="space-y-2">
           {sectionsArray.map((section) => (
             <li
               key={section._id}
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                padding: "8px 0",
-                borderBottom: "1px solid #eee",
-              }}
+              className="flex justify-between items-center py-2 border-b last:border-b-0 border-slate-200 dark:border-zinc-800"
             >
-              <span>
-                {section.courseTitle} - (Sección {section.sectionCode})
+              <span className="text-sm text-foreground">
+                {section.courseTitle} <span className="text-muted-foreground">- (Sección {section.sectionCode})</span>
               </span>
               <button
                 onClick={() => dispatch(removeSection(section.course))}
-                style={{
-                  background: "#dc3545",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "4px",
-                  cursor: "pointer",
-                }}
+                className="text-sm px-2 py-1 rounded-md bg-destructive text-primary-foreground hover:brightness-95"
               >
                 Quitar
               </button>
@@ -146,31 +127,18 @@ const MatriculaSummary = () => {
           ))}
         </ul>
       ) : (
-        <p>Aún no has seleccionado ningún curso.</p>
+        <p className="text-sm text-muted-foreground">Aún no has seleccionado ningún curso.</p>
       )}
 
       <button
         onClick={handleConfirm}
         disabled={isLoading}
-        style={{
-          width: "100%",
-          padding: "12px",
-          marginTop: "20px",
-          background: "#007bff",
-          color: "white",
-          border: "none",
-          borderRadius: "4px",
-          fontSize: "1rem",
-          cursor: "pointer",
-        }}
+        className="w-full mt-4 py-2 rounded-md text-sm bg-primary text-primary-foreground disabled:opacity-60"
       >
         {isLoading ? "Procesando Matrícula..." : "Confirmar Matrícula"}
       </button>
-      {error && (
-        <p style={{ color: "red", marginTop: "10px", textAlign: "center" }}>
-          {error}
-        </p>
-      )}
+
+      {error && <p className="text-sm text-destructive mt-3 text-center">{error}</p>}
     </div>
   );
 };
@@ -180,85 +148,117 @@ const MatriculaSummary = () => {
 // ===================================================================================
 const StudentMatriculaPage = () => {
   const { progressData } = useSelector((state) => state.progress);
-  const [expandedCourseId, setExpandedCourseId] = useState(null);
+  const [modalCourse, setModalCourse] = useState(null);
 
-  const toggleSections = (courseId) => {
-    setExpandedCourseId((prevId) => (prevId === courseId ? null : courseId));
-  };
+  const openSectionsModal = (course) => setModalCourse(course);
+  const closeSectionsModal = () => setModalCourse(null);
 
   if (!progressData || !progressData.eligibleCourses) {
     return <h2>Cargando cursos disponibles para tu matrícula...</h2>;
   }
 
   return (
-    <div>
-      <h1>Matrícula Académica</h1>
-      <p>
-        Estás ubicado en el <strong>Ciclo {progressData.currentCycle}</strong>.
-        A continuación, selecciona las secciones en las que deseas matricularte.
-      </p>
-
-      <MatriculaSummary />
-
-      <h3
-        style={{
-          marginTop: "40px",
-          borderBottom: "2px solid #ccc",
-          paddingBottom: "10px",
-        }}
-      >
-        Cursos Disponibles
-      </h3>
-      {progressData.eligibleCourses.length > 0 ? (
-        progressData.eligibleCourses.map((course) => (
-          <div
-            key={course._id}
-            style={{
-              border: "1px solid #ddd",
-              margin: "15px 0",
-              borderRadius: "8px",
-              overflow: "hidden",
-            }}
-          >
-            <div
-              style={{
-                padding: "20px",
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                background: "#fff",
-              }}
-            >
-              <div>
-                <h4 style={{ margin: 0 }}>{course.title}</h4>
-                <p style={{ margin: "5px 0 0", color: "#666" }}>
-                  {course.description}
-                </p>
-              </div>
-              <button onClick={() => toggleSections(course._id)}>
-                {expandedCourseId === course._id
-                  ? "Ocultar Secciones"
-                  : "Ver Secciones"}
-              </button>
-            </div>
-            {expandedCourseId === course._id && (
-              <CourseSectionsViewer course={course} />
-            )}
+    <div className="container mx-auto px-4 py-8">
+      <BlurFade inView delay={0.1}>
+        <div className="mb-6 flex items-start gap-4">
+          <div className="bg-card/50 p-2.5 rounded-lg flex-shrink-0">
+            <Book className="w-6 h-6 text-primary" />
           </div>
-        ))
-      ) : (
-        <div
-          style={{
-            padding: "20px",
-            background: "#e8f5e9",
-            borderRadius: "8px",
-            marginTop: "20px",
-          }}
-        >
-          <p>
-            <strong>¡Felicitaciones!</strong> Parece que ya has aprobado todos
-            los cursos disponibles en tu malla hasta este ciclo.
-          </p>
+          <div className="flex-1">
+            <h1 className="text-3xl font-bold mb-1 text-foreground">Matrícula Académica</h1>
+            <p className="text-lg text-foreground mb-2">
+              Estás ubicado en el <strong>Ciclo {progressData.currentCycle}</strong>.
+            </p>
+            <p className="text-sm text-muted-foreground">
+              Selecciona las secciones en las que deseas matricularte para el periodo actual.
+            </p>
+          </div>
+        </div>
+      </BlurFade>
+
+      <div className="grid gap-6 grid-cols-1 lg:grid-cols-3">
+        <aside className="lg:col-span-1">
+          <Card className="mb-6 bg-card">
+            <CardHeader>
+              <CardTitle>Resumen de Matrícula</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <MatriculaSummary />
+            </CardContent>
+          </Card>
+        </aside>
+
+        <main className="lg:col-span-2 space-y-4">
+          <h2 className="text-xl font-semibold text-foreground">Cursos Disponibles</h2>
+          {progressData.eligibleCourses.length > 0 ? (
+            <div className="space-y-4">
+              {progressData.eligibleCourses.map((course) => (
+                <Card key={course._id} className="overflow-hidden bg-card">
+                  <div className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div className="flex-1">
+                      <div className="text-lg font-medium text-foreground">{course.title}</div>
+                      {course.description && (
+                        <div className="text-sm text-muted-foreground mt-1">
+                          {course.description}
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <button
+                        onClick={() => openSectionsModal(course)}
+                        className="px-3 py-2 rounded-md border bg-transparent text-foreground hover:bg-accent"
+                      >
+                        Ver Secciones
+                      </button>
+                    </div>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <Card className="p-6 bg-green-50">
+              <div className="text-sm">
+                <strong>¡Felicitaciones!</strong> Parece que ya has aprobado todos
+                los cursos disponibles en tu malla hasta este ciclo.
+              </div>
+            </Card>
+          )}
+        </main>
+      </div>
+
+      {/* Modal superpuesto para ver secciones (centrado) */}
+      {modalCourse && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-black/60"
+            onClick={closeSectionsModal}
+          />
+          <div className="relative w-full max-w-2xl z-10">
+            <Card className="shadow-xl rounded-2xl overflow-hidden bg-card">
+              <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-4">
+                <div className="flex-1">
+                  <CardTitle className="text-lg font-semibold text-foreground">
+                    {modalCourse.title}
+                  </CardTitle>
+                    {modalCourse.description && (
+                    <div className="text-sm text-muted-foreground mt-1">
+                      {modalCourse.description}
+                    </div>
+                  )}
+                </div>
+                <button
+                  onClick={closeSectionsModal}
+                  className="p-2 rounded-md hover:bg-muted flex-shrink-0 ml-4"
+                  aria-label="Cerrar"
+                >
+                  <X className="w-5 h-5 text-foreground" />
+                </button>
+              </CardHeader>
+              <CardContent>
+                <CourseSectionsViewer course={modalCourse} />
+              </CardContent>
+            </Card>
+          </div>
         </div>
       )}
     </div>

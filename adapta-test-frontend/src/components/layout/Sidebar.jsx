@@ -18,8 +18,9 @@ import {
 import { useSelector, useDispatch } from "react-redux";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { getMyCareer } from "../../features/careers/careerSlice";
+import { getMySections } from "../../features/sections/sectionSlice";
 
 // SidebarLink mejorado para mostrar iconos y labels según colapsado
 function SidebarLink({ icon: Icon, label, to, active, isCollapsed, isSubItem = false }) {
@@ -42,7 +43,8 @@ function SidebarLink({ icon: Icon, label, to, active, isCollapsed, isSubItem = f
       )}
     >
       {/* protect Icon to avoid rendering undefined */}
-      {Icon && <Icon className="h-5 w-5 flex-shrink-0" />} 
+      {/* ensure icon color is visible in light mode */} 
+      {Icon && <Icon className="h-5 w-5 flex-shrink-0 text-muted-foreground" />} 
       <span 
         className={cn(
           "transition-opacity whitespace-nowrap",
@@ -80,8 +82,8 @@ function SidebarAccordion({ title, icon: Icon, isCollapsed, children, isOpen, on
         isCollapsed ? "h-10 w-10 justify-center p-0 mx-auto" : "px-3"
       )}
     >
-      {/* protect Icon too */}
-      {Icon && <Icon className="h-5 w-5 flex-shrink-0" />}
+      {/* protect Icon too - ensure visible color in light mode */}
+      {Icon && <Icon className="h-5 w-5 flex-shrink-0 text-muted-foreground" />}
       <span
         className={cn(
           "transition-opacity whitespace-nowrap",
@@ -136,11 +138,47 @@ export function Sidebar({ isCollapsed, onToggle }) {
   const { user } = useSelector((state) => state.auth);
   const { myCareer } = useSelector((state) => state.careers);
   const [myCareers, setMyCareers] = useState([]);
-  const [expandedSections, setExpandedSections] = useState({});
+  // leer secciones del profesor (slice 'sections')
+  const { mySections = [] } = useSelector((state) => state.sections || {});
+  // Inicializar con 'courses' abierto por defecto para profesores
+  const [expandedSections, setExpandedSections] = useState(() => ({
+    courses: user?.role === "professor",
+  }));
+  // Estado para trackear cursos abiertos (key: courseId)
+  const [expandedCourses, setExpandedCourses] = useState({});
+
+  // memoizar lista de secciones para estabilidad de render
+  const professorSections = useMemo(() => {
+    const sections = Array.isArray(mySections) ? mySections : [];
+    return sections;
+  }, [mySections]);
+
+  // agrupar secciones por curso
+  const sectionsByC = useMemo(() => {
+    const map = new Map();
+    professorSections.forEach((section) => {
+      if (section && section.course) {
+        const courseId = String(section.course._id || section.course);
+        if (!map.has(courseId)) {
+          map.set(courseId, {
+            courseId,
+            courseTitle: section.course.title || "Curso sin título",
+            sections: [],
+          });
+        }
+        map.get(courseId).sections.push(section);
+      }
+    });
+    return Array.from(map.values());
+  }, [professorSections]);
 
   useEffect(() => {
     if (user?.role === "coordinator") {
       dispatch(getMyCareer());
+    }
+    // Cargar secciones del profesor
+    if (user?.role === "professor") {
+      dispatch(getMySections());
     }
   }, [dispatch, user]);
 
@@ -178,6 +216,13 @@ export function Sidebar({ isCollapsed, onToggle }) {
     }));
   };
 
+  const toggleCourse = (courseId) => {
+    setExpandedCourses((prev) => ({
+      ...prev,
+      [courseId]: !prev[courseId],
+    }));
+  };
+ 
   // ADMIN
   if (user?.role === "admin") {
     return (
@@ -284,34 +329,11 @@ export function Sidebar({ isCollapsed, onToggle }) {
         <nav className="flex-1 overflow-y-auto overflow-x-hidden py-4 px-4 space-y-4">
           <SidebarLink
             icon={Home}
-            label="Inicio"
-            to="/coordinator"
-            active={isActive("/coordinator")}
+            label="Dashboard"
+            to="/dashboard"
+            active={isActive("/dashboard")}
             isCollapsed={isCollapsed}
           />
-          {myCareers.length > 0 && (
-            <Collapsible open={expandedSections.dashboard} onOpenChange={() => toggleSection("dashboard")}>
-              <CollapsibleTrigger asChild>
-                <div className={cn("flex items-center gap-3 py-2.5 rounded-lg transition-all duration-200 group font-medium cursor-pointer", "text-muted-foreground hover:bg-accent hover:text-accent-foreground", isCollapsed ? "h-10 w-10 justify-center p-0 mx-auto" : "px-3")}>
-                  <GraduationCap className="h-5 w-5 flex-shrink-0" />
-                  <span className={cn("transition-opacity whitespace-nowrap", isCollapsed && "opacity-0 hidden")}>Mi Carrera</span>
-                  <ChevronDown className={cn("ml-auto h-4 w-4 transition-transform", expandedSections.dashboard && "rotate-180", isCollapsed && "opacity-0 hidden")} />
-                </div>
-              </CollapsibleTrigger>
-              <CollapsibleContent className="pl-8 space-y-2 mt-2">
-                {myCareers.map((career) => (
-                  <SidebarLink
-                    key={career._id}
-                    label={career.name}
-                    to={`/coordinator/dashboard?career=${career._id}`}
-                    active={isActive("/coordinator/dashboard", career._id)}
-                    isCollapsed={isCollapsed}
-                    isSubItem={true}
-                  />
-                ))}
-              </CollapsibleContent>
-            </Collapsible>
-          )}
           <SidebarLink
             icon={Settings}
             label="Configuración"
@@ -349,23 +371,9 @@ export function Sidebar({ isCollapsed, onToggle }) {
         <nav className="flex-1 overflow-y-auto overflow-x-hidden py-4 px-4 space-y-4">
           <SidebarLink
             icon={Home}
-            label="Inicio"
-            to="/student"
+            label="Dashboard"
+            to="/dashboard"
             active={isActive("/student")}
-            isCollapsed={isCollapsed}
-          />
-          <SidebarLink
-            icon={BookOpen}
-            label="Mis Cursos"
-            to="/student/courses"
-            active={isActive("/student/courses")}
-            isCollapsed={isCollapsed}
-          />
-          <SidebarLink
-            icon={FileText}
-            label="Mi Progreso"
-            to="/student/progress"
-            active={isActive("/student/progress")}
             isCollapsed={isCollapsed}
           />
           <SidebarLink
@@ -382,6 +390,10 @@ export function Sidebar({ isCollapsed, onToggle }) {
 
   // PROFESSOR
   if (user?.role === "professor") {
+    // Forzar que "Mis Cursos" esté abierto si estamos en una ruta de sección
+    const isInSectionRoute = location.pathname.startsWith("/manage/section/");
+    const coursesOpen = isInSectionRoute ? true : expandedSections.courses;
+
     return (
       <aside
         data-collapsed={isCollapsed}
@@ -405,25 +417,66 @@ export function Sidebar({ isCollapsed, onToggle }) {
         <nav className="flex-1 overflow-y-auto overflow-x-hidden py-4 px-4 space-y-4">
           <SidebarLink
             icon={Home}
-            label="Inicio"
-            to="/professor"
-            active={isActive("/professor")}
+            label="Dashboard"
+            to="/dashboard"
+            active={isActive("/dashboard")}
             isCollapsed={isCollapsed}
           />
-          <SidebarLink
+          {/* Mis Cursos: acordeón principal que agrupa por curso */}
+          <SidebarAccordion
+            title="Mis Cursos"
             icon={BookOpen}
-            label="Mis Cursos"
-            to="/professor/courses"
-            active={isActive("/professor/courses")}
             isCollapsed={isCollapsed}
-          />
-          <SidebarLink
-            icon={FileText}
-            label="Calificaciones"
-            to="/professor/grading"
-            active={isActive("/professor/grading")}
-            isCollapsed={isCollapsed}
-          />
+            isOpen={coursesOpen}
+            onToggle={() => toggleSection("courses")}
+          >
+            {sectionsByC.length > 0 ? (
+              sectionsByC.map((courseGroup) => (
+                <Collapsible
+                  key={courseGroup.courseId}
+                  open={expandedCourses[courseGroup.courseId] || false}
+                  onOpenChange={() => toggleCourse(courseGroup.courseId)}
+                >
+                  <CollapsibleTrigger asChild>
+                    <div
+                      className={cn(
+                        "flex items-center gap-2 py-2 px-3 rounded-lg transition-all duration-200 cursor-pointer",
+                        "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
+                        "text-sm font-medium"
+                      )}
+                    >
+                      <ChevronDown
+                        className={cn(
+                          "h-4 w-4 transition-transform",
+                          expandedCourses[courseGroup.courseId] && "rotate-180"
+                        )}
+                      />
+                      <span className="truncate">{courseGroup.courseTitle}</span>
+                    </div>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="pl-4 space-y-1 mt-1">
+                    {courseGroup.sections.map((section) => {
+                      const label = section.sectionCode ? `Sección ${section.sectionCode}` : `Sección ${section._id.substring(0, 8)}`;
+                      return (
+                        <SidebarLink
+                          key={section._id}
+                          icon={null}
+                          label={label}
+                          to={`/manage/section/${section._id}`}
+                          active={isActive(`/manage/section/${section._id}`)}
+                          isCollapsed={isCollapsed}
+                          isSubItem={true}
+                        />
+                      );
+                    })}
+                  </CollapsibleContent>
+                </Collapsible>
+              ))
+            ) : (
+              <div className="text-xs text-muted-foreground px-3 py-2">No tienes secciones asignadas</div>
+            )}
+          </SidebarAccordion>
+
           <SidebarLink
             icon={Settings}
             label="Configuración"

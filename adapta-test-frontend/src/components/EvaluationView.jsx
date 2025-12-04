@@ -9,7 +9,7 @@ import { EvaluationSkeleton } from "@/components/EvaluationSkeleton";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, CheckCircle2, XCircle, Target } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 // NOTA: Este componente es casi idéntico a la `EvaluationPage` anterior,

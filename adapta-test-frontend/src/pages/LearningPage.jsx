@@ -29,12 +29,14 @@ import { EvaluationView } from "@/components/EvaluationView"; // <-- 1. Importar
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { Link } from "react-router-dom";
+import { createPortal } from "react-dom";
+import { X } from "lucide-react";
 
 // --- Componentes ---
 
 
 // ===================================================================================
-//  NUEVO SUB-COMPONENTE: Modal Inteligente para Tareas
+//  NUEVO SUB-COMPONENTE: Modal Inteligente para Tareas (ADAPTADO A MODO OSCURO)
 // ===================================================================================
 const AssignmentModal = ({ assignment, onClose }) => {
   const dispatch = useDispatch();
@@ -72,95 +74,133 @@ const AssignmentModal = ({ assignment, onClose }) => {
   // --- Lógica para decidir qué mostrar dentro del modal ---
   const renderContent = () => {
     if (isLoading) {
-      return <p>Verificando estado de la entrega...</p>;
+      return <p className="text-muted-foreground">Verificando estado de la entrega...</p>;
     }
 
     if (mySubmission) {
       // Si ya existe una entrega, mostramos la información
       return (
-        <div>
-          <h3>Tu Entrega</h3>
-          <p style={styles.submissionBox}>{mySubmission.content}</p>
-          <hr />
-          <h4>Calificación</h4>
-          {mySubmission.grade != null ? (
-            <div>
-              <p>
-                <strong>Nota:</strong> {mySubmission.grade}
-              </p>
-              <p>
-                <strong>Feedback del Profesor:</strong>{" "}
-                {mySubmission.feedback || "Sin comentarios."}
-              </p>
+        <div className="space-y-4">
+          <div>
+            <h3 className="text-lg font-semibold text-foreground mb-2">Tu Entrega</h3>
+            <div className="bg-muted border border-slate-200 dark:border-zinc-700 rounded-lg p-4 text-sm text-foreground whitespace-pre-wrap max-h-48 overflow-y-auto">
+              {mySubmission.content}
             </div>
-          ) : (
-            <p>Tu tarea ha sido entregada y está pendiente de calificación.</p>
-          )}
-          <div style={styles.modalActions}>
-            <button type="button" onClick={onClose}>
+          </div>
+          
+          <hr className="border-slate-200 dark:border-zinc-700" />
+          
+          <div>
+            <h4 className="text-base font-semibold text-foreground mb-3">Calificación</h4>
+            {mySubmission.grade != null ? (
+              <div className="space-y-2">
+                <div>
+                  <p className="text-sm text-muted-foreground">Nota:</p>
+                  <p className="text-lg font-bold text-primary">{mySubmission.grade}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Feedback del Profesor:</p>
+                  <p className="text-sm text-foreground mt-1">
+                    {mySubmission.feedback || "Sin comentarios."}
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground italic">
+                Tu tarea ha sido entregada y está pendiente de calificación.
+              </p>
+            )}
+          </div>
+
+          <div className="flex justify-end gap-2 pt-4 border-t border-slate-200 dark:border-zinc-700">
+            <Button
+              type="button"
+              onClick={onClose}
+              variant="default"
+              className="w-full"
+            >
               Cerrar
-            </button>
+            </Button>
           </div>
         </div>
       );
     } else {
       // Si no hay entrega, mostramos el formulario
       return (
-        <form onSubmit={handleSubmit}>
-          <label htmlFor="submission-content">Tu Respuesta:</label>
-          <textarea
-            id="submission-content"
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            required
-            placeholder="Escribe tu respuesta aquí..."
-            style={styles.textarea}
-          ></textarea>
-          <div style={styles.modalActions}>
-            <button type="button" onClick={onClose}>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="submission-content" className="text-sm font-medium text-foreground">
+              Tu Respuesta:
+            </Label>
+            <textarea
+              id="submission-content"
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              required
+              placeholder="Escribe tu respuesta aquí..."
+              className="w-full px-3 py-2.5 border rounded-lg bg-card text-foreground focus-visible:ring-2 focus-visible:outline-none resize-none"
+              rows="8"
+            />
+          </div>
+
+          <div className="flex justify-end gap-2 pt-4 border-t border-slate-200 dark:border-zinc-700">
+            <Button
+              type="button"
+              onClick={onClose}
+              variant="outline"
+              className="w-full"
+            >
               Cancelar
-            </button>
-            <button type="submit" disabled={isLoading}>
+            </Button>
+            <Button
+              type="submit"
+              variant="default"
+              disabled={isLoading}
+              className="w-full"
+            >
               {isLoading ? "Enviando..." : "Entregar Tarea"}
-            </button>
+            </Button>
           </div>
         </form>
       );
     }
   };
 
-  return (
-    <div style={styles.modalOverlay}>
-      <div style={styles.modalContent}>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-          }}
-        >
-          <h2>Tarea: {assignment.title}</h2>
+  return createPortal(
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60">
+      <div className="relative w-full max-w-md max-h-[90vh] overflow-y-auto rounded-lg bg-card border border-slate-200 dark:border-zinc-700 shadow-xl">
+        {/* Header */}
+        <div className="sticky top-0 bg-card border-b border-slate-200 dark:border-zinc-700 p-4 flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-foreground">
+            Tarea: {assignment.title}
+          </h2>
           <button
             onClick={onClose}
-            style={{
-              height: "40px",
-              background: "none",
-              border: "none",
-              fontSize: "1.5rem",
-              cursor: "pointer",
-            }}
+            className="p-2 hover:bg-muted rounded-lg text-foreground transition"
+            aria-label="Cerrar"
           >
-            &times;
+            <X size={20} />
           </button>
         </div>
-        <p>
-          <strong>Instrucciones:</strong>{" "}
-          {assignment.instructions || "No se proporcionaron instrucciones."}
-        </p>
-        <hr />
-        {renderContent()}
+
+        {/* Content */}
+        <div className="p-4">
+          <div className="mb-4">
+            <p className="text-sm text-foreground">
+              <strong>Instrucciones:</strong>{" "}
+            </p>
+            <p className="text-sm text-muted-foreground mt-1">
+              {assignment.instructions || "No se proporcionaron instrucciones."}
+            </p>
+          </div>
+
+          <hr className="border-slate-200 dark:border-zinc-700 my-4" />
+
+          {renderContent()}
+        </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 

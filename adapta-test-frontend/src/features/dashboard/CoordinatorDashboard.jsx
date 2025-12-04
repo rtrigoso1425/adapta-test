@@ -269,6 +269,8 @@ const SyllabusUploader = ({ coursesInCurriculum }) => {
 const CoordinatorDashboard = () => {
     const dispatch = useDispatch();
     const { myCareer, isLoading } = useSelector((state) => state.careers);
+    // catálogo global de cursos (similar a cómo LearningPage usa section.course)
+    const allCourses = useSelector((state) => state.courses?.courses || []);
     const [selectedCareer, setSelectedCareer] = useState(null);
     const [myCareers, setMyCareers] = useState([]);
     
@@ -370,8 +372,9 @@ const CoordinatorDashboard = () => {
 
                     <div className="flex items-start justify-between gap-3 mb-4">
                         <div className="flex items-start gap-3">
-                            <div className="bg-card/50 p-2.5 rounded-lg backdrop-blur-sm">
-                                <GraduationCap className="w-6 h-6" />
+                            <div className="bg-card/50 p-2.5 rounded-lg">
+                                {/* icono principal del header: resaltado con color primario en modo claro */}
+                                <GraduationCap className="w-6 h-6 text-primary" />
                             </div>
                             <div className="flex-1">
                                 <h1 className="text-3xl font-bold mb-2">Gestión de Carrera</h1>
@@ -394,7 +397,8 @@ const CoordinatorDashboard = () => {
                 <div>
                     <div className="flex items-center gap-3 mb-6">
                         <div className="bg-card/50 p-2.5 rounded-lg backdrop-blur-sm">
-                            <BookPlus className="w-6 h-6" />
+                            {/* icono secundario: usar color muted para buen contraste en claro */}
+                            <BookPlus className="w-6 h-6 text-muted-foreground" />
                         </div>
                         <h2 className="text-2xl font-bold">Malla Curricular</h2>
                     </div>
@@ -415,15 +419,54 @@ const CoordinatorDashboard = () => {
                                         <CardContent>
                                             {cycle.courses && cycle.courses.length > 0 ? (
                                                 <ul className="space-y-2">
-                                                    {cycle.courses.map(course => (
-                                                        <li 
-                                                            key={course._id}
-                                                            className="flex items-start gap-2 text-sm text-foreground bg-muted p-2 rounded-lg"
-                                                        >
-                                                            <Book className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
-                                                            <span>{course.title}</span>
-                                                        </li>
-                                                    ))}
+                                                    {cycle.courses.map((courseRef) => {
+                                                        // courseRef puede ser id o objeto
+                                                        const courseId = (typeof courseRef === "string") ? courseRef : (courseRef?._id || courseRef?.id);
+                                                        const courseObj = (typeof courseRef === "object" && courseRef.title)
+                                                            ? courseRef
+                                                            : allCourses.find((c) => String(c._id) === String(courseId)) || {};
+
+                                                        const title = courseObj.title || courseRef.title || "Curso sin título";
+                                                        const shortDesc = courseObj.description || courseObj.summary || courseRef.description || "";
+                                                        const syllabus = courseObj.syllabus || courseRef.syllabus || null;
+                                                        const instructorName = courseObj.instructor?.name || courseRef.instructor?.name || null;
+                                                        const modulesCount =
+                                                          (Array.isArray(courseObj.modules) && courseObj.modules.length) ||
+                                                          courseObj.modulesCount ||
+                                                          courseObj.moduleCount ||
+                                                          0;
+
+                                                        return (
+                                                          <li
+                                                            key={courseId || courseRef._id || Math.random()}
+                                                            className="flex flex-col sm:flex-row sm:items-start gap-2 text-sm text-foreground bg-muted p-3 rounded-lg"
+                                                          >
+                                                            <div className="flex items-center gap-3 w-full sm:w-auto">
+                                                              <Book className="w-5 h-5 text-muted-foreground mt-0.5 flex-shrink-0" />
+                                                            </div>
+                                                            <div className="flex-1">
+                                                              <div className="flex items-center justify-between">
+                                                                <div className="font-medium">{title}</div>
+                                                                {syllabus ? (
+                                                                  <a
+                                                                    href={syllabus}
+                                                                    target="_blank"
+                                                                    rel="noreferrer"
+                                                                    className="text-xs text-primary hover:underline ml-2"
+                                                                  >
+                                                                    Sílabus
+                                                                  </a>
+                                                                ) : null}
+                                                              </div>
+                                                              {shortDesc ? <div className="text-xs text-muted-foreground mt-1">{shortDesc}</div> : null}
+                                                              <div className="mt-2 text-xs text-muted-foreground flex gap-4">
+                                                                <div>{modulesCount} módulos</div>
+                                                                {instructorName ? <div>Profesor: {instructorName}</div> : null}
+                                                              </div>
+                                                            </div>
+                                                          </li>
+                                                        );
+                                                    })}
                                                 </ul>
                                             ) : (
                                                 <p className="text-sm text-muted-foreground italic">

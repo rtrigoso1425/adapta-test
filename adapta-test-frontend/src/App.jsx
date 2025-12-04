@@ -1,6 +1,8 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import DashboardLayout from "./components/layout/DashboardLayout";
 import HomePage from "./pages/HomePage";
+import ProfilePage from "./pages/ProfilePage";
+import SettingsPage from "./pages/SettingsPage";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import DashboardPage from "./pages/DashboardPage";
@@ -26,6 +28,8 @@ function App() {
           {/* Rutas accesibles para todos los roles autenticados */}
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/courses" element={<CoursesPage />} />
+          <Route path="/profile" element={<ProfilePage/>} />
+          <Route path="/settings" element={<SettingsPage/>} />
           <Route path="/courses/:id" element={<CourseDetailPage />} />
           <Route path="/learn/section/:id" element={<LearningPage />} />
 

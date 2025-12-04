@@ -294,7 +294,7 @@ export function Sidebar({ isCollapsed, onToggle }) {
           <SidebarLink
             icon={Settings}
             label="Configuración"
-            to="/admin/settings"
+            to="/settings"
             active={isActive("/admin/settings")}
             isCollapsed={isCollapsed}
           />
@@ -337,7 +337,7 @@ export function Sidebar({ isCollapsed, onToggle }) {
           <SidebarLink
             icon={Settings}
             label="Configuración"
-            to="/coordinator/settings"
+            to="/settings"
             active={isActive("/coordinator/settings")}
             isCollapsed={isCollapsed}
           />
@@ -379,7 +379,7 @@ export function Sidebar({ isCollapsed, onToggle }) {
           <SidebarLink
             icon={Settings}
             label="Configuración"
-            to="/student/settings"
+            to="/settings"
             active={isActive("/student/settings")}
             isCollapsed={isCollapsed}
           />
@@ -480,7 +480,7 @@ export function Sidebar({ isCollapsed, onToggle }) {
           <SidebarLink
             icon={Settings}
             label="Configuración"
-            to="/professor/settings"
+            to="/settings"
             active={isActive("/professor/settings")}
             isCollapsed={isCollapsed}
           />
@@ -536,7 +536,7 @@ export function Sidebar({ isCollapsed, onToggle }) {
           <SidebarLink
             icon={Settings}
             label="Configuración"
-            to="/parent/settings"
+            to="/settings"
             active={isActive("/parent/settings")}
             isCollapsed={isCollapsed}
           />

@@ -19,6 +19,7 @@ import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { cn } from "../lib/utils";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
 
 const rolesOrder = ["admin", "coordinator", "professor", "student", "parent"];
 
@@ -38,7 +39,7 @@ export default function AdminUsersTable() {
   const isLoading = useSelector((state) => state.users.isLoading);
 
   const [search, setSearch] = useState("");
-  const [roleFilter, setRoleFilter] = useState("");
+  const [roleFilter, setRoleFilter] = useState("all");
 
   const availableRoles = useMemo(() => {
     const setR = new Set(users.map((u) => u.role).filter(Boolean));
@@ -48,7 +49,7 @@ export default function AdminUsersTable() {
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return users.filter((u) => {
-      const matchesRole = roleFilter ? u.role === roleFilter : true;
+      const matchesRole = roleFilter === "all" ? true : u.role === roleFilter;
       const matchesQuery =
         !q ||
         (u.name && u.name.toLowerCase().includes(q)) ||
@@ -83,23 +84,27 @@ export default function AdminUsersTable() {
             onChange={(e) => setSearch(e.target.value)}
             className="w-64"
           />
-          <select
+          <Select
             value={roleFilter}
-            onChange={(e) => setRoleFilter(e.target.value)}
-            className="px-3 py-2.5 border rounded-lg bg-card text-foreground text-sm font-medium transition-colors hover:border-primary/50 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 dark:focus:ring-offset-slate-950 cursor-pointer"
+            onValueChange={(val) => setRoleFilter(val)}
           >
-            <option value="">Todos los roles</option>
-            {availableRoles.map((r) => (
-              <option key={r} value={r}>
-                {r}
-              </option>
-            ))}
-          </select>
+            <SelectTrigger className="px-3 py-2.5 border rounded-lg bg-card text-foreground text-sm font-medium transition-colors hover:border-primary/50 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 dark:focus:ring-offset-slate-950 cursor-pointer">
+              <SelectValue placeholder="Todos los roles" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos los roles</SelectItem>
+              {availableRoles.map((r) => (
+                <SelectItem key={r} value={r}>
+                  {r}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
         <Button 
           variant="outline" 
           size="sm" 
-          onClick={() => { setSearch(""); setRoleFilter(""); }}
+          onClick={() => { setSearch(""); setRoleFilter("all"); }}
         >
           Limpiar
         </Button>
@@ -113,9 +118,9 @@ export default function AdminUsersTable() {
             <TableHead className="w-[120px] text-foreground">Rol</TableHead>
             <TableHead className="w-[160px] text-foreground">Creado</TableHead>
             <TableHead className="w-[160px] text-foreground">Actualizado</TableHead>
-             <TableHead className="w-[100px] text-foreground">Acciones</TableHead>
+            <TableHead className="w-[100px] text-foreground">Acciones</TableHead>
             </TableRow>
-         </TableHeader>
+        </TableHeader>
 
         <TableBody>
             {isLoading ? (
@@ -187,19 +192,18 @@ export default function AdminUsersTable() {
                       Copiar
                     </Button>
                   </div>
-                 </TableCell>
-               </TableRow>
-             ))
-           ) : (
-             <TableRow>
-               <TableCell colSpan={6} className="text-center py-6 text-muted-foreground">
-                 No se encontraron usuarios.
-               </TableCell>
-             </TableRow>
-           )}
-         </TableBody>
-       </Table>
-     </div>
-   );
- }
-
+                </TableCell>
+              </TableRow>
+            ))
+          ) : (
+            <TableRow>
+              <TableCell colSpan={6} className="text-center py-6 text-muted-foreground">
+                No se encontraron usuarios.
+              </TableCell>
+            </TableRow>
+          )}
+        </TableBody>
+      </Table>
+    </div>
+  );
+}

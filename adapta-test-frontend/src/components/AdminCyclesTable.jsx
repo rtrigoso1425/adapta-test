@@ -11,6 +11,7 @@ import {
 import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
 import {
   Tooltip,
   TooltipContent,
@@ -55,31 +56,39 @@ export default function AdminCyclesTable() {
 
   return (
     <div className="my-6 p-4 border rounded-lg bg-card shadow-sm overflow-x-auto">
-      <div className="flex flex-wrap items-center justify-between mb-4 gap-4">
-        <div className="flex gap-2 items-center flex-wrap">
+      {/* Cambio principal aquí: flex-row simple, items-center y gap pequeño */}
+      <div className="flex flex-wrap justify-between items-center gap-3 mb-4 w-fit">
           <Input
             placeholder="Buscar por nombre..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-64"
+            // w-auto permite que el input sea compacto, o puedes usar w-[250px] para un tamaño fijo
+            className="w-[250px]" 
           />
-          <select
+          
+          <Select
             value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-3 py-2.5 bg-card text-foreground border rounded-lg transition-colors hover:border-primary/50 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 dark:focus:ring-offset-slate-950 cursor-pointer"
+            onValueChange={(val) => setStatusFilter(val)}
           >
-            <option value="all">Todos</option>
-            <option value="active">Activos</option>
-            <option value="inactive">Inactivos</option>
-          </select>
-        </div>
-        <Button 
-          variant="outline" 
-          size="sm" 
-          onClick={() => { setSearch(""); setStatusFilter("all"); }}
-        >
-          Limpiar
-        </Button>
+            {/* w-[150px] para que el select tenga un ancho controlado y no ocupe todo */}
+            <SelectTrigger className="w-[150px] px-3 py-2.5 bg-card text-foreground border rounded-lg transition-colors hover:border-primary/50 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 dark:focus:ring-offset-slate-950 cursor-pointer">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos</SelectItem>
+              <SelectItem value="active">Activos</SelectItem>
+              <SelectItem value="inactive">Inactivos</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Button 
+            variant="outline" 
+            size="sm" // size="icon" podría ser útil si solo usas un icono, pero sm está bien
+            onClick={() => { setSearch(""); setStatusFilter("all"); }}
+            className="h-10" // Asegura que tenga la misma altura visual que los inputs si es necesario
+          >
+            Limpiar
+          </Button>
       </div>
 
       <Table className="w-full">

@@ -7,6 +7,7 @@ import { Card, CardHeader, CardContent, CardTitle, CardDescription, CardFooter }
 import { Label } from "../components/ui/label";
 import { Input } from "../components/ui/input";
 import { Button } from "../components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
 import { Typewriter } from "../components/ui/typewriter-text";
 import { 
   ArrowLeft, GraduationCap, Plus, X, Book, FileText, ChevronDown, ChevronUp, 
@@ -901,16 +902,20 @@ const CreateLessonModal = ({ moduleId, isOpen, onClose, onLessonCreated }) => {
 
               <div className="space-y-2">
                 <Label>Tipo de Recurso</Label>
-                <select
+                <Select
                   value={contentType}
-                  onChange={(e) => setContentType(e.target.value)}
-                  className="w-full px-3 py-2 border rounded-lg bg-background text-foreground text-sm"
+                  onValueChange={(val) => setContentType(val)}
                 >
-                  <option value="text">Solo Texto</option>
-                  <option value="video_url">Video (URL)</option>
-                  <option value="document_url">Documento (PDF/Word)</option>
-                  <option value="slides_url">Presentación (Slides)</option>
-                </select>
+                  <SelectTrigger className="w-full px-3 py-2 border rounded-lg bg-background text-foreground text-sm">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="text">Solo Texto</SelectItem>
+                    <SelectItem value="video_url">Video (URL)</SelectItem>
+                    <SelectItem value="document_url">Documento (PDF/Word)</SelectItem>
+                    <SelectItem value="slides_url">Presentación (Slides)</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="space-y-2">
@@ -1075,18 +1080,21 @@ const CreateQuestionModal = ({ moduleId, isOpen, onClose }) => {
                 
                 <div className="space-y-2">
                   <Label>Dificultad (1-5)</Label>
-                  <select
-                    value={difficulty}
-                    onChange={(e) => setDifficulty(Number(e.target.value))}
-                    className="w-full px-3 py-2 border rounded-lg bg-background text-foreground text-sm"
-                    required
+                  <Select
+                    value={String(difficulty)}
+                    onValueChange={(val) => setDifficulty(Number(val))}
                   >
-                    <option value={1}>1 - Muy Fácil</option>
-                    <option value={2}>2 - Fácil</option>
-                    <option value={3}>3 - Intermedio</option>
-                    <option value={4}>4 - Difícil</option>
-                    <option value={5}>5 - Muy Difícil</option>
-                  </select>
+                    <SelectTrigger className="w-full px-3 py-2 border rounded-lg bg-background text-foreground text-sm">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="1">1 - Muy Fácil</SelectItem>
+                      <SelectItem value="2">2 - Fácil</SelectItem>
+                      <SelectItem value="3">3 - Intermedio</SelectItem>
+                      <SelectItem value="4">4 - Difícil</SelectItem>
+                      <SelectItem value="5">5 - Muy Difícil</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
 

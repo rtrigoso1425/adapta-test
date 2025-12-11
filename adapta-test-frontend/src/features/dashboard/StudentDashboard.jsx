@@ -8,6 +8,8 @@ import CourseFlipCard from "../../components/flip-card-course";
 import { DashboardSkeleton } from "@/components/layout/DashboardSkeleton"; // <-- 1. Importar
 import { BlurFade } from "../../components/ui/blur-fade";
 import { Book } from "lucide-react";
+import cardLight from "../../../assets/card-light.png";
+import cardDark from "../../../assets/card-dark.png";
 
 const StudentDashboard = () => {
   const dispatch = useDispatch();
@@ -88,6 +90,8 @@ const StudentDashboard = () => {
               return (
                 <div key={enroll._id || courseId || sectionId} className="flex justify-center">
                   <CourseFlipCard
+                    imageLight={cardLight}
+                    imageDark={cardDark}
                     title={title}
                     subtitle={sectionLabel ? `Sección: ${sectionLabel}` : ""}
                     description={description}

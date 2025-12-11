@@ -3,14 +3,6 @@ import { cn } from "../lib/utils";
 import { ArrowRight, Code2, Copy } from "lucide-react";
 import { Link } from "react-router-dom";
 
-/*
-  CourseFlipCard
-  - Dimensiones y colores alineados con CardFlip (h-[360px], max-w-[300px], --primary)
-  - Frente: StudentDashboard style (status, code, title, instructor, progress)
-  - Reverso: detalles + features + CTA
-  - Rutas: actionHref || (sectionId -> /manage/section/:id) || (courseId -> /courses/:id) || /courses
-*/
-
 export default function CourseFlipCard({
   title = "Curso sin título",
   subtitle = "",
@@ -22,24 +14,24 @@ export default function CourseFlipCard({
   actionOnClick = null,
   courseId = null,
   sectionId = null,
-  // nuevos props front
   status = "En progreso",
   code = "",
   instructorName = "-",
   progressPercent = 0,
-  modulesCount = 0, // nuevo prop: cantidad de módulos
+  modulesCount = 0,
+  // --- NUEVAS PROPS PARA IMÁGENES ---
+  imageLight = null, // Pasa aquí: card-light.png
+  imageDark = null,  // Pasa aquí: card-dark.png
 }) {
   const [isFlipped, setIsFlipped] = useState(false);
   const pct = Math.max(0, Math.min(100, Number(progressPercent || 0)));
 
-  // Normalizar estados devueltos por el backend para mostrar "En progreso"
   const _s = String(status || "").toLowerCase();
   const displayStatus =
     _s.includes("enroll") || _s.includes("matric") || _s.includes("progress") || _s.includes("in progress")
       ? "En progreso"
       : status || "En progreso";
 
-  // resolver ruta priorizando actionHref > sectionId > courseId > /courses
   const resolvedHref = actionHref
     ? actionHref
     : sectionId
@@ -55,7 +47,6 @@ export default function CourseFlipCard({
       onMouseEnter={() => setIsFlipped(true)}
       onMouseLeave={() => setIsFlipped(false)}
     >
-      {/* wrapper: mismo comportamiento 3D / transición que la flip-card principal */}
       <div
         className={cn(
           'relative h-full w-full',
@@ -64,7 +55,7 @@ export default function CourseFlipCard({
           isFlipped ? '[transform:rotateY(180deg)]' : '[transform:rotateY(0deg)]'
         )}
       >
-        {/* Front: Student dashboard card layout */}
+        {/* --- FRENTE: Student dashboard card layout --- */}
         <div
           className={cn(
             'absolute inset-0 h-full w-full',
@@ -80,10 +71,36 @@ export default function CourseFlipCard({
             isFlipped ? 'opacity-0' : 'opacity-100'
           )}
         >
-          {/* Image / hero area */}
-          <div className="h-40 bg-gradient-to-br from-primary/10 to-primary/30 flex items-center justify-center">
-            {/* Placeholder image area - can be replaced with actual course image */}
-            <div className="h-full w-full bg-gradient-to-br from-white/30 to-transparent" />
+          {/* --- AQUÍ ESTÁ EL CAMBIO PRINCIPAL (Image / hero area) --- */}
+          <div className="h-40 relative bg-gradient-to-br from-primary/10 to-primary/30 flex items-center justify-center overflow-hidden">
+            
+            {/* 1. Si hay imagen, mostrar lógica de switch CSS */}
+            {imageLight ? (
+              <>
+                {/* Imagen Light: Se muestra por defecto. Si existe Dark, se oculta en modo oscuro. */}
+                <img 
+                  src={imageLight} 
+                  alt={title}
+                  className={cn(
+                    "absolute inset-0 h-full w-full object-cover",
+                    imageDark ? "block dark:hidden" : "block"
+                  )}
+                />
+                
+                {/* Imagen Dark: Solo se muestra si existe Y estamos en modo oscuro */}
+                {imageDark && (
+                  <img 
+                    src={imageDark} 
+                    alt={title}
+                    className="absolute inset-0 h-full w-full object-cover hidden dark:block"
+                  />
+                )}
+              </>
+            ) : (
+              /* 2. Fallback: Si no mandas imágenes, muestra el gradiente original */
+              <div className="h-full w-full bg-gradient-to-br from-white/30 to-transparent" />
+            )}
+
           </div>
 
           {/* Body */}
@@ -96,8 +113,8 @@ export default function CourseFlipCard({
                 <span className="text-xs font-mono text-muted-foreground">{code}</span>
               </div>
 
-              <h3 className="text-lg font-semibold text-foreground leading-tight">{title}</h3>
-              <p className="text-sm text-muted-foreground mt-1">{instructorName}</p>
+              <h3 className="text-lg font-semibold text-foreground leading-tight line-clamp-2">{title}</h3>
+              <p className="text-sm text-muted-foreground mt-1 line-clamp-1">{instructorName}</p>
             </div>
 
             <div className="mt-4">
@@ -110,13 +127,11 @@ export default function CourseFlipCard({
                   style={{ width: `${pct}%` }}
                 />
               </div>
-
-              {/* Removed front CTA: only rear CTA remains per spec */}
             </div>
           </div>
         </div>
 
-        {/* Back: detalles / features + CTA (misma configuración 3D/animación que la flip-card) */}
+        {/* --- REVERSO: Detalles (Sin cambios mayores) --- */}
         <div
           className={cn(
             'absolute inset-0 h-full w-full',
@@ -137,30 +152,29 @@ export default function CourseFlipCard({
             <div className="space-y-3 flex-1">
               <div className="mb-2 flex items-center gap-2">
                 <div className="from-primary via-primary/90 to-primary/80 flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br">
-                  <Code2 className="h-4 w-4 text-primary" />
+                  <Code2 className="h-4 w-4 text-primary-foreground" />
                 </div>
-                <h3 className="text-lg font-semibold text-foreground">{title}</h3>
+                <h3 className="text-lg font-semibold text-foreground line-clamp-2">{title}</h3>
               </div>
 
-              <p className="text-sm text-muted-foreground">{description}</p>
+              <p className="text-sm text-muted-foreground line-clamp-3">{description}</p>
 
-              {/* Mostrar cantidad de módulos e instructor (requerido) */}
               <div className="mt-2 text-sm text-foreground space-y-1">
                 <div>Módulos: <span className="font-medium">{modulesCount ?? 0}</span></div>
                 <div>Profesor: <span className="font-medium">{instructorName || "-"}</span></div>
               </div>
               
               <div className="space-y-2.5 mt-2">
-                {features && features.length ? (
-                  features.map((f, i) => {
+                {features && features.length > 0 ? (
+                  features.slice(0, 3).map((f, i) => { // Limitar a 3 features para que no se desborde
                     const icons = [Copy, Code2, Code2];
                     const IconComponent = icons[i % icons.length];
                     return (
                       <div key={i} className="flex items-center gap-3 text-sm text-foreground">
-                        <div className="bg-primary/10 dark:bg-primary/20 flex h-6 w-6 items-center justify-center rounded-md">
+                        <div className="bg-primary/10 dark:bg-primary/20 flex h-6 w-6 items-center justify-center rounded-md flex-shrink-0">
                           <IconComponent className="text-primary h-3 w-3" />
                         </div>
-                        <span className="font-medium">{f}</span>
+                        <span className="font-medium truncate">{f}</span>
                       </div>
                     );
                   })
@@ -170,24 +184,23 @@ export default function CourseFlipCard({
               </div>
             </div>
 
-            {/* CTA en la parte trasera: usa resolvedHref o actionOnClick */}
             <div className="mt-4 pt-4 border-t border-slate-200 dark:border-zinc-800">
               {actionOnClick ? (
                 <button
                   type="button"
                   onClick={actionOnClick}
-                  className="flex w-full items-center justify-between rounded-lg p-2.5 bg-white/0 hover:bg-primary/5 transition-colors"
+                  className="flex w-full items-center justify-between rounded-lg p-2.5 bg-white/0 hover:bg-primary/5 transition-colors group/btn"
                 >
-                  <span className="text-sm font-semibold text-primary">{actionLabel}</span>
+                  <span className="text-sm font-semibold text-primary group-hover/btn:translate-x-1 transition-transform">{actionLabel}</span>
                   <ArrowRight className="text-primary h-4 w-4" />
                 </button>
               ) : (
                 <Link
                   to={resolvedHref}
-                  className="flex w-full items-center justify-between rounded-lg p-2.5 bg-white/0 hover:bg-primary/5 transition-colors"
+                  className="flex w-full items-center justify-between rounded-lg p-2.5 bg-white/0 hover:bg-primary/5 transition-colors group/btn"
                   style={{ textDecoration: "none" }}
                 >
-                  <span className="text-sm font-semibold text-primary">{actionLabel}</span>
+                  <span className="text-sm font-semibold text-primary group-hover/btn:translate-x-1 transition-transform">{actionLabel}</span>
                   <ArrowRight className="text-primary h-4 w-4" />
                 </Link>
               )}

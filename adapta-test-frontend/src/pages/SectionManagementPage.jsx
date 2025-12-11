@@ -24,9 +24,10 @@ import {
   getQuestionsForModule,
   createQuestion,
 } from "../features/questions/questionSlice";
-import {
-  getSectionAnalytics,
+import { 
+  getSectionAnalytics, 
   reset as resetAnalytics,
+  selectEnrichedAnalytics
 } from "../features/analytics/analyticsSlice";
 import {
   getGradingPreview,
@@ -571,7 +572,8 @@ const FinalGradingTab = ({ section }) => {
 // ===================================================================================
 const AnalyticsTab = ({ sectionId }) => {
   const dispatch = useDispatch();
-  const { analyticsData, isLoading } = useSelector((state) => state.analytics);
+  const analyticsData = useSelector(selectEnrichedAnalytics);
+  const { isLoading } = useSelector((state) => state.analytics);
 
   useEffect(() => {
     dispatch(getSectionAnalytics(sectionId));
@@ -662,27 +664,60 @@ const AnalyticsTab = ({ sectionId }) => {
 
         {/* Card 3: Preguntas Difíciles */}
         <BlurFade delay={0.3} inView>
-          <Card className="h-full border-l-4 border-l-yellow-500 shadow-sm">
+          <Card className="h-full border-l-4 border-l-yellow-500 shadow-sm flex flex-col">
             <CardHeader className="pb-2">
               <CardTitle className="text-base font-medium flex items-center gap-2 text-muted-foreground">
                 <Trophy className="w-4 h-4 text-yellow-500" /> Puntos de Dolor
               </CardTitle>
               <h3 className="text-2xl font-bold text-foreground">Preguntas Difíciles</h3>
             </CardHeader>
-            <CardContent>
+            <CardContent className="flex-1 overflow-y-auto max-h-[300px] pr-2">
                <div className="mt-2 space-y-3">
-                 {difficultQuestions.length > 0 ? difficultQuestions.map(([questionId, count], idx) => (
-                   <div key={idx} className="flex items-center justify-between p-3 rounded-lg bg-muted/40 border border-border">
-                      <div className="flex items-center gap-3">
-                        <span className="text-lg font-bold text-muted-foreground/50">#{idx + 1}</span>
-                        <div>
-                          <p className="text-xs font-mono text-muted-foreground">ID: {questionId.slice(-6)}...</p>
-                          <p className="text-xs text-red-500 font-medium">Fallada {count} veces</p>
+                 {difficultQuestions.length > 0 ? difficultQuestions.map(([questionItem, count], idx) => {
+                   // Lógica de seguridad:
+                   // Verifica si 'questionItem' es un objeto con texto (como en tu referencia) o solo un ID
+                   const isPopulated = typeof questionItem === 'object' && questionItem !== null;
+                   const text = isPopulated ? questionItem.questionText : "Texto no disponible (Solo ID)";
+                   const id = isPopulated ? questionItem._id : questionItem;
+
+                   return (
+                     <div key={isPopulated ? id : idx} className="group flex items-start gap-3 p-3 rounded-lg bg-muted/40 border border-border hover:bg-muted/70 transition-colors">
+                        {/* Ranking Badge */}
+                        <div className="flex flex-col items-center justify-start pt-1">
+                           <span className="flex items-center justify-center w-6 h-6 rounded-full bg-background border text-xs font-bold text-muted-foreground shadow-sm">
+                             #{idx + 1}
+                           </span>
                         </div>
-                      </div>
+                        
+                        {/* Contenido Texto */}
+                        <div className="flex-1 min-w-0">
+                          {/* Muestra el texto de la pregunta (limitado a 3 líneas) */}
+                          <p className="text-sm font-medium text-foreground line-clamp-3 leading-snug" title={isPopulated ? text : ""}>
+                             {isPopulated ? text : `ID: ${String(id).slice(-8)}...`}
+                          </p>
+                          
+                          {/* Metadatos: ID y Contador de fallos */}
+                          <div className="flex items-center justify-between mt-2">
+                             <span className="text-[10px] font-mono text-muted-foreground/60 truncate max-w-[80px]">
+                               ID: {String(id).slice(-6)}
+                             </span>
+                             <div className="flex items-center gap-1.5 bg-red-100 dark:bg-red-900/30 px-2 py-0.5 rounded-full border border-red-200 dark:border-red-800">
+                                <AlertCircle size={10} className="text-red-600 dark:text-red-400" />
+                                <span className="text-xs font-bold text-red-600 dark:text-red-400 whitespace-nowrap">
+                                  {count} fallos
+                                </span>
+                             </div>
+                          </div>
+                        </div>
+                     </div>
+                   );
+                 }) : (
+                   <div className="h-full flex flex-col items-center justify-center text-center py-8 opacity-60">
+                     <Trophy className="w-10 h-10 text-muted-foreground/30 mb-2" />
+                     <p className="text-sm text-muted-foreground italic">
+                       No hay suficientes datos de errores para mostrar estadísticas.
+                     </p>
                    </div>
-                 )) : (
-                   <p className="text-sm text-muted-foreground italic">No hay suficientes datos de errores.</p>
                  )}
                </div>
             </CardContent>

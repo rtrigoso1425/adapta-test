@@ -415,8 +415,16 @@ export function Sidebar({ isCollapsed, onToggle }) {
           <SidebarLink
             icon={LayoutDashboard} // Asegúrate de importar LayoutDashboard arriba
             label="Instituciones"
-            to="/dashboard"
-            active={isActive("/dashboard")}
+            to="/dashboard?tab=institutions"
+            active={isActive("/dashboard?tab=institutions")}
+            isCollapse
+            d={isCollapsed}
+          />
+          <SidebarLink
+            icon={LayoutDashboard} // Asegúrate de importar LayoutDashboard arriba
+            label="Planes"
+            to="/dashboard?tab=plans"
+            active={isActive("/dashboard?tab=plans")}
             isCollapsed={isCollapsed}
           />
            {/* Aquí puedes agregar más links futuros como "Usuarios Globales" */}

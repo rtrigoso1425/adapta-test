@@ -17,6 +17,7 @@ import submissionReducer from '../features/submissions/submissionSlice';
 import gradingReducer from '../features/grading/gradingSlice'; // <-- AÑADIR
 import analyticsReducer from '../features/analytics/analyticsSlice';
 import institutionReducer from '@/features/institutions/institutionSlice';
+import planReducer from '../features/plans/planSlice';
 
 
 export const store = configureStore({
@@ -39,6 +40,6 @@ export const store = configureStore({
         grading: gradingReducer,
         analytics: analyticsReducer,
         institutions: institutionReducer, // <-- AÑADIR
-
+        plans: planReducer
     },
 });

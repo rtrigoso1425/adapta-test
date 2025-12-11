@@ -4,6 +4,7 @@ const Enrollment = require("../models/enrollmentModel");
 const Mastery = require("../models/masteryModel");
 const PerformanceLog = require("../models/performanceLogModel");
 const Module = require("../models/moduleModel");
+const Question = require("../models/questionModel"); // <--- 1. IMPORTANTE: Importamos el modelo de Preguntas
 
 // @desc    Obtener las analíticas de rendimiento para una sección
 // @route   GET /api/analytics/section/:sectionId
@@ -12,16 +13,18 @@ const getSectionAnalytics = async (req, res) => {
   const { sectionId } = req.params;
   const institutionId = req.institution._id;
 
-  // 1. Validar que la sección exista en la institución y que el usuario tenga permisos
+  // 1. Validar que la sección exista en la institución
   const section = await Section.findOne({
     _id: sectionId,
     institution: institutionId,
   });
+  
   if (!section) {
     return res
       .status(404)
       .json({ message: "Sección no encontrada en esta institución." });
   }
+  
   if (
     req.user.role === "professor" &&
     section.instructor.toString() !== req.user._id.toString()
@@ -33,7 +36,7 @@ const getSectionAnalytics = async (req, res) => {
       });
   }
 
-  // 2. Obtener los IDs de los estudiantes matriculados en esta sección
+  // 2. Obtener los IDs de los estudiantes matriculados
   const enrollments = await Enrollment.find({
     section: sectionId,
     status: "enrolled",
@@ -44,6 +47,9 @@ const getSectionAnalytics = async (req, res) => {
   if (studentIds.length === 0) {
     return res.json({
       message: "No hay estudiantes matriculados para generar analíticas.",
+      masteryByModule: [],
+      difficultQuestions: [],
+      strugglingStudents: []
     });
   }
 
@@ -60,6 +66,7 @@ const getSectionAnalytics = async (req, res) => {
     module: { $in: moduleIds },
     institution: institutionId,
   });
+  
   const masteryByModule = modulesInSection.map((module) => {
     const relevantRecords = masteryRecords.filter(
       (r) => r.module.toString() === module._id.toString()
@@ -77,12 +84,14 @@ const getSectionAnalytics = async (req, res) => {
     };
   });
 
-  // --- Encontrar las Preguntas Más Difíciles ---
+  // --- Encontrar las Preguntas Más Difíciles (CON TEXTO) ---
   const performanceLogs = await PerformanceLog.find({
     student: { $in: studentIds },
     module: { $in: moduleIds },
     institution: institutionId,
   });
+
+  // A. Contar fallos (igual que antes)
   const questionFailures = {};
   performanceLogs.forEach((log) => {
     if (!log.isCorrect) {
@@ -90,11 +99,28 @@ const getSectionAnalytics = async (req, res) => {
       questionFailures[qId] = (questionFailures[qId] || 0) + 1;
     }
   });
-  const difficultQuestions = Object.entries(questionFailures)
-    .sort(([, a], [, b]) => b - a)
-    .slice(0, 5); // Top 5
 
-  // --- Identificar Estudiantes con Dificultades (maestría < 40 en cualquier módulo) ---
+  // B. Ordenar y sacar el Top 5 (IDs)
+  const sortedFailures = Object.entries(questionFailures)
+    .sort(([, a], [, b]) => b - a)
+    .slice(0, 5); // [[id1, 10], [id2, 8]...]
+
+  // C. NUEVO: Buscar los detalles de esas preguntas en la DB
+  const topQuestionIds = sortedFailures.map(([id]) => id);
+  
+  const questionsDetails = await Question.find({
+    _id: { $in: topQuestionIds }
+  }).select('questionText difficulty'); // Solo traemos el texto y dificultad para ser eficientes
+
+  // D. Combinar los datos (Contador + Texto)
+  const difficultQuestions = sortedFailures.map(([id, count]) => {
+    // Buscamos el objeto completo que coincida con el ID
+    const questionObj = questionsDetails.find(q => q._id.toString() === id);
+    // Retornamos el objeto completo si existe, si no, el ID como fallback
+    return [questionObj || id, count];
+  });
+
+  // --- Identificar Estudiantes con Dificultades ---
   const strugglingStudentsRecords = await Mastery.find({
     student: { $in: studentIds },
     module: { $in: moduleIds },
@@ -106,7 +132,7 @@ const getSectionAnalytics = async (req, res) => {
 
   res.json({
     masteryByModule,
-    difficultQuestions,
+    difficultQuestions, // Ahora contiene objetos completos
     strugglingStudents: strugglingStudentsRecords,
   });
 };

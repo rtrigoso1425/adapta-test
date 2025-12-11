@@ -1,10 +1,25 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 // import VideoPlayer from "@/components/ui/video-player"; // <-- Lo comentamos porque usaremos ReactPlayer
 import { Card, CardContent } from "@/components/ui/card";
 import { FileText, Link, PlayCircle } from "lucide-react";
-import ReactPlayer from 'react-player'; // Asegúrate de haber hecho: npm install react-player
+import ThumbnailButton from "./thumbnail-button-video-player";
 
 export function LessonContentRenderer({ lesson }) {
+  // Extrae ID de YouTube (varios formatos)
+  const getYouTubeId = (url) => {
+    if (!url) return null;
+    const patterns = [
+      /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([A-Za-z0-9_-]{11})/,
+      /youtube\.com\/v\/([A-Za-z0-9_-]{11})/
+    ];
+    for (const p of patterns) {
+      const m = url.match(p);
+      if (m && m[1]) return m[1];
+    }
+    return null;
+  };
+
+  const youtubeId = useMemo(() => getYouTubeId(lesson?.fileUrl), [lesson?.fileUrl]);
   
   // Renderizador de contenido de texto
   const renderTextContent = () => {
@@ -35,34 +50,23 @@ export function LessonContentRenderer({ lesson }) {
 
   switch (lesson.contentType) {
     case "video_url":
-      // --- CORRECCIÓN AQUÍ ---
-      // Usamos ReactPlayer envuelto en un div responsivo
+      // Renderizamos el ThumbnailButton que abre el modal/reproductor.
       return (
         <div className="w-full space-y-4">
-           {/* Contenedor con aspect-ratio para que el video no se deforme */}
-           <div className="relative w-full pt-[56.25%] bg-black rounded-xl overflow-hidden shadow-md">
-             {/* pt-[56.25%] es el truco para mantener ratio 16:9 */}
-             <ReactPlayer
-               url={lesson.fileUrl}
-               width="100%"
-               height="100%"
-               controls={true}
-               className="absolute top-0 left-0"
-               // Configuración extra para asegurar que YouTube funcione suave
-               config={{
-                 youtube: {
-                   playerVars: { showinfo: 1 }
-                 }
-               }}
-             />
-           </div>
-           {/* Mostramos también la descripción del video si existe */}
-           {lesson.content && (
-             <div className="prose dark:prose-invert max-w-none mt-4 p-4 bg-card rounded-lg border">
-               <h4 className="text-sm font-semibold text-muted-foreground mb-2">Descripción de la lección:</h4>
-               <p className="whitespace-pre-wrap">{lesson.content}</p>
-             </div>
-           )}
+          <ThumbnailButton
+            videoUrl={lesson.fileUrl}
+            youtubeId={youtubeId}
+            thumbnailUrl={lesson.thumbnailUrl}
+            title={lesson.title || "Video de la lección"}
+            className="w-full"
+          />
+          {/* Descripción del video si existe */}
+          {lesson.content && (
+            <div className="prose dark:prose-invert max-w-none mt-4 p-4 bg-card rounded-lg border">
+              <h4 className="text-sm font-semibold text-muted-foreground mb-2">Descripción de la lección:</h4>
+              <p className="whitespace-pre-wrap">{lesson.content}</p>
+            </div>
+          )}
         </div>
       );
     

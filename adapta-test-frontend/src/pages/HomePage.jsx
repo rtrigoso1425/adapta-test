@@ -40,8 +40,8 @@ const logos = [
 ];
 
 const teamData = [
-    { name: 'Aldair Doloriert', title: 'Backend', avatar: 'https://i.ibb.co/w2wbpg6/2.jpg', socials: { github: 'https://github.com/ezzADJG', linkedin: '#', twitter: '#', instagram: "https://www.instagram.com/aldair.d14" } },
-    { name: 'Rodrigo Trigoso', title: 'Frontend', avatar: 'https://i.ibb.co/fzxDpnZ8/1.png', socials: { github: 'https://github.com/rtrigoso1425', linkedin: '#', twitter: '#', instagram: "https://www.instagram.com/rtrigoso1425" } }
+    { name: 'Aldair Doloriert', title: 'Backend', avatar: 'https://i.ibb.co/w2wbpg6/2.jpg', socials: { github: 'https://github.com/ezzADJG', instagram: "https://www.instagram.com/aldair.d14" } },
+    { name: 'Rodrigo Trigoso', title: 'Frontend', avatar: 'https://i.ibb.co/fzxDpnZ8/1.png', socials: { github: 'https://github.com/rtrigoso1425', instagram: "https://www.instagram.com/rtrigoso1425" } }
 ];
 
 const footerLinks = [
@@ -238,7 +238,6 @@ const HomePage = () => {
             </div>
           </div>
           <ModernTeamShowcase teamMembers={teamData} />
-          <VideoPlayer src="https://youtu.be/D8KbXpk2J9Y?si=gBEHFro8ivbxec_S"></VideoPlayer>
         </div>
         {/* Gradient Glow */}
         <div className="absolute bottom-0 left-0 right-0 h-[400px] bg-gradient-to-t from-blue-900/50 via-blue-600/20 to-transparent rounded-t-full opacity-80 blur-3xl"></div>

@@ -20,6 +20,7 @@ const gradingRoutes = require("./routes/gradingRoutes"); // <-- IMPORTAR
 const analyticsRoutes = require("./routes/analyticsRoutes"); // <-- IMPORTAR
 const parentRoutes = require("./routes/parentRoutes");
 const institutionRoutes = require("./routes/institutionRoutes");
+const planRoutes = require('./routes/planRoutes');
 
 dotenv.config();
 connectDB();
@@ -53,6 +54,7 @@ app.use("/api/grading", gradingRoutes); // <-- AÑADIR
 app.use("/api/analytics", analyticsRoutes); // <-- AÑADIR
 app.use("/api/parents", parentRoutes);
 app.use("/api/institutions", institutionRoutes);
+app.use('/api/plans', planRoutes)
 
 // Middleware para capturar rutas no encontradas (error 404)
 app.use((req, res, next) => {

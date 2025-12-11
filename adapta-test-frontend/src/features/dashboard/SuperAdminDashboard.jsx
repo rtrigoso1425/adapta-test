@@ -1,217 +1,344 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import { getInstitutions, createInstitution, reset } from "../institutions/institutionSlice";
-import { BlurFade } from "../../components/ui/blur-fade";
-import { Card, CardHeader, CardTitle, CardContent } from "../../components/ui/card";
+// Imports de Redux
+import { getInstitutions, createInstitution } from "../institutions/institutionSlice";
+import { getPlans, createPlan } from "../plans/planSlice";
+
+// Imports UI Components
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
-import { SelectNative } from "../../components/ui/select-native";
+// CAMBIO: Importamos los componentes del Select Personalizado en lugar de SelectNative
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from "../../components/ui/select";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "../../components/ui/table";
 import { Badge } from "../../components/ui/badge";
-import { Plus, Building2, X } from "lucide-react";
-import { createPortal } from "react-dom";
-
-// Reutilizamos el estilo de Modal que usas en otros dashboards
-const ModalOverlay = ({ isOpen, onClose, children }) => {
-  if (!isOpen) return null;
-  return createPortal(
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
-      <div className="relative w-full max-w-md bg-card rounded-xl shadow-xl border border-border" onClick={(e) => e.stopPropagation()}>
-        <button onClick={onClose} className="absolute top-4 right-4 text-muted-foreground hover:text-foreground">
-          <X size={20} />
-        </button>
-        {children}
-      </div>
-    </div>,
-    document.body
-  );
-};
+import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "../../components/ui/dialog"; 
+import { Plus, Building, CreditCard, Users } from "lucide-react";
 
 const SuperAdminDashboard = () => {
   const dispatch = useDispatch();
-  // eslint-disable-next-line no-unused-vars
-  const { institutions, isLoading, isError, message } = useSelector((state) => state.institutions);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTab = searchParams.get("tab") || "institutions";
+  
+  // Selectores
+  const { institutions } = useSelector((state) => state.institutions);
+  const { plans } = useSelector((state) => state.plans);
 
-  // Estado del formulario
-  const [formData, setFormData] = useState({
-    name: "",
-    code: "",
-    type: "university", // Valor por defecto
-    maxStudentsPerSection: 30,
-    allowParentAccess: false,
-    requiresPrerequisites: true
+  // Estados Locales para Formularios
+  const [instData, setInstData] = useState({
+    name: "", code: "", type: "university", planId: "",
+    adminName: "", adminEmail: "", adminPassword: ""
   });
+  
+  const [planData, setPlanData] = useState({
+    name: "", code: "", price: 0, billingCycle: "monthly", maxStudents: 100
+  });
+
+  const [openInstModal, setOpenInstModal] = useState(false);
+  const [openPlanModal, setOpenPlanModal] = useState(false);
+
+  // Buscador y filtros (estilo similar a AdminUsersTable)
+  const [search, setSearch] = useState("");
+  const [typeFilter, setTypeFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+
+  const filteredInstitutions = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return (institutions || []).filter((inst) => {
+      const matchesQuery =
+        !q ||
+        (inst.name && inst.name.toLowerCase().includes(q)) ||
+        (inst.code && inst.code.toLowerCase().includes(q));
+      const matchesType = typeFilter ? inst.type === typeFilter : true;
+      const matchesStatus =
+        statusFilter === ""
+          ? true
+          : statusFilter === "active"
+          ? !!inst.isActive
+          : !inst.isActive;
+      return matchesQuery && matchesType && matchesStatus;
+    });
+  }, [institutions, search, typeFilter, statusFilter]);
 
   useEffect(() => {
     dispatch(getInstitutions());
-    return () => { dispatch(reset()); };
+    dispatch(getPlans());
   }, [dispatch]);
 
-  const handleChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value
-    }));
-  };
-
-  const handleSubmit = (e) => {
+  // Handlers
+  const submitInstitution = (e) => {
     e.preventDefault();
-    // Estructuramos los datos como los espera el backend (settings anidado)
+    // Limpiamos el planId si es "none" para que el backend lo reciba como null
     const payload = {
-      name: formData.name,
-      code: formData.code,
-      type: formData.type,
-      settings: {
-        maxStudentsPerSection: Number(formData.maxStudentsPerSection),
-        allowParentAccess: formData.allowParentAccess,
-        requiresPrerequisites: formData.requiresPrerequisites
-      }
+        ...instData,
+        planId: instData.planId === "none" ? null : instData.planId
     };
 
-    dispatch(createInstitution(payload))
-      .unwrap()
+    dispatch(createInstitution(payload)).unwrap()
       .then(() => {
-        setIsModalOpen(false);
-        setFormData({ // Resetear form
-          name: "", code: "", type: "university", 
-          maxStudentsPerSection: 30, allowParentAccess: false, requiresPrerequisites: true 
-        });
-        alert("Institución creada exitosamente");
+        setOpenInstModal(false);
+        setInstData({ name: "", code: "", type: "university", planId: "", adminName: "", adminEmail: "", adminPassword: "" });
+        alert("Institución creada con éxito");
       })
       .catch((err) => alert(err));
   };
 
+  const submitPlan = (e) => {
+    e.preventDefault();
+    dispatch(createPlan(planData)).unwrap()
+      .then(() => {
+        setOpenPlanModal(false);
+        setPlanData({ name: "", code: "", price: 0, billingCycle: "monthly", maxStudents: 100 });
+      });
+  };
+
   return (
-    <div className="container mx-auto px-4 py-8">
-      <BlurFade inView delay={0.1}>
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-3">
-            <div className="bg-primary/10 p-3 rounded-lg">
-              <Building2 className="w-8 h-8 text-primary" />
-            </div>
-            <div>
-              <h1 className="text-3xl font-bold">Gestión de Instituciones</h1>
-              <p className="text-muted-foreground">Panel de Superadministrador</p>
-            </div>
+    <div className="p-6 space-y-6">
+      <div className="flex justify-between items-center">
+        <h1 className="text-3xl font-bold tracking-tight">Panel Super Admin</h1>
+      </div>
+
+      {/* El tab activo se controla desde la sidebar mediante la query param `?tab=institutions|plans` */}
+      <Tabs value={activeTab} className="w-full">
+ 
+        {/* --- TAB INSTITUCIONES --- */}
+        <TabsContent value="institutions" className="mt-4">
+          <div className="flex justify-end mb-4">
+            <Dialog open={openInstModal} onOpenChange={setOpenInstModal}>
+              <DialogTrigger asChild>
+                <Button className="gap-2"><Plus size={16}/> Nueva Institución</Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-2xl overflow-y-auto max-h-[90vh]">
+                <DialogHeader><DialogTitle>Registrar Institución</DialogTitle></DialogHeader>
+                <form onSubmit={submitInstitution} className="space-y-4 pt-4">
+                  {/* Sección 1: Datos Institución */}
+                  <div className="grid grid-cols-2 gap-4 p-4 bg-muted/30 rounded-lg">
+                      <div className="col-span-2 font-semibold text-primary">Datos Generales</div>
+                      
+                      <div className="space-y-1">
+                        <Label>Nombre</Label>
+                        <Input value={instData.name} onChange={e => setInstData({...instData, name: e.target.value})} required placeholder="Ej: Universidad Central" />
+                      </div>
+                      
+                      <div className="space-y-1">
+                        <Label>Código</Label>
+                        <Input value={instData.code} onChange={e => setInstData({...instData, code: e.target.value})} required placeholder="Ej: UCE" />
+                      </div>
+                      
+                      <div className="space-y-1">
+                        <Label>Tipo</Label>
+                        {/* SELECT CUSTOM 1: Tipo de Institución */}
+                        <Select 
+                            value={instData.type} 
+                            onValueChange={(val) => setInstData({...instData, type: val})}
+                        >
+                            <SelectTrigger className="bg-card">
+                                <SelectValue placeholder="Selecciona tipo" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="university">Universidad</SelectItem>
+                                <SelectItem value="high_school">Colegio</SelectItem>
+                            </SelectContent>
+                        </Select>
+                      </div>
+                      
+                      <div className="space-y-1">
+                        <Label>Plan Inicial</Label>
+                        {/* SELECT CUSTOM 2: Planes */}
+                        <Select 
+                            value={instData.planId} 
+                            onValueChange={(val) => setInstData({...instData, planId: val})}
+                        >
+                            <SelectTrigger className="bg-card">
+                                <SelectValue placeholder="Selecciona un plan (Opcional)" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="none">-- Sin Plan --</SelectItem>
+                                {plans && plans.map(p => (
+                                    <SelectItem key={p._id} value={p._id}>
+                                        {p.name} (${p.price})
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                      </div>
+                  </div>
+
+                  {/* Sección 2: Datos Admin */}
+                  <div className="grid grid-cols-2 gap-4 p-4 bg-blue-50/50 dark:bg-blue-950/20 rounded-lg border border-blue-100 dark:border-blue-900">
+                      <div className="col-span-2 font-semibold text-blue-700 dark:text-blue-400 flex items-center gap-2">
+                        <Users size={16}/> Administrador Inicial
+                      </div>
+                      <div className="col-span-2 space-y-1">
+                        <Label>Nombre Completo</Label>
+                        <Input value={instData.adminName} onChange={e => setInstData({...instData, adminName: e.target.value})} required placeholder="Admin Principal" />
+                      </div>
+                      <div className="space-y-1">
+                        <Label>Email</Label>
+                        <Input type="email" value={instData.adminEmail} onChange={e => setInstData({...instData, adminEmail: e.target.value})} required placeholder="admin@institucion.com" />
+                      </div>
+                      <div className="space-y-1">
+                        <Label>Contraseña</Label>
+                        <Input type="password" value={instData.adminPassword} onChange={e => setInstData({...instData, adminPassword: e.target.value})} required />
+                      </div>
+                  </div>
+                  
+                  <Button type="submit" className="w-full">Crear Todo</Button>
+                </form>
+              </DialogContent>
+            </Dialog>
           </div>
-          <Button onClick={() => setIsModalOpen(true)} className="gap-2">
-            <Plus size={20} /> Nueva Institución
-          </Button>
-        </div>
 
-        {/* Tabla de Instituciones */}
-        <Card>
-          <CardContent className="p-0">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Nombre</TableHead>
-                  <TableHead>Código</TableHead>
-                  <TableHead>Tipo</TableHead>
-                  <TableHead>Configuración</TableHead>
-                  <TableHead>Estado</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {isLoading ? (
-                  <TableRow><TableCell colSpan={5} className="text-center h-24">Cargando...</TableCell></TableRow>
-                ) : institutions.length > 0 ? (
-                  institutions.map((inst) => (
-                    <TableRow key={inst._id}>
-                      <TableCell className="font-medium">{inst.name}</TableCell>
-                      <TableCell><code className="bg-muted px-2 py-1 rounded">{inst.code}</code></TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className={inst.type === 'university' ? 'border-blue-500 text-blue-500' : 'border-green-500 text-green-500'}>
-                          {inst.type === 'university' ? 'Universidad' : 'Colegio'}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
-                        <div>Max Alumnos: {inst.settings?.maxStudentsPerSection}</div>
-                        <div>Padres: {inst.settings?.allowParentAccess ? 'Sí' : 'No'}</div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge className={inst.isActive ? "bg-green-600" : "bg-red-600"}>
-                          {inst.isActive ? "Activa" : "Inactiva"}
-                        </Badge>
-                      </TableCell>
+          <Card>
+            <CardContent className="p-0">
+              {/* Barra de búsqueda y filtros (estilo AdminUsersTable) */}
+              <div className="my-4 p-4">
+                <div className="flex flex-wrap items-center justify-between mb-4 gap-4">
+                  <div className="flex gap-2 items-center">
+                    <Input
+                      placeholder="Buscar por nombre o código..."
+                      value={search}
+                      onChange={(e) => setSearch(e.target.value)}
+                      className="w-64"
+                    />
+                    <select
+                      value={typeFilter}
+                      onChange={(e) => setTypeFilter(e.target.value)}
+                      className="px-3 py-2.5 border rounded-lg bg-card text-foreground text-sm font-medium"
+                    >
+                      <option value="">Todos los tipos</option>
+                      <option value="university">Universidad</option>
+                      <option value="high_school">Colegio</option>
+                    </select>
+                    <select
+                      value={statusFilter}
+                      onChange={(e) => setStatusFilter(e.target.value)}
+                      className="px-3 py-2.5 border rounded-lg bg-card text-foreground text-sm font-medium"
+                    >
+                      <option value="">Todos los estados</option>
+                      <option value="active">Activo</option>
+                      <option value="inactive">Inactivo</option>
+                    </select>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => { setSearch(""); setTypeFilter(""); setStatusFilter(""); }}
+                  >
+                    Limpiar
+                  </Button>
+                </div>
+
+                <Table className="w-full">
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-[240px] text-foreground">Nombre</TableHead>
+                      <TableHead className="w-[160px] text-foreground">Código</TableHead>
+                      <TableHead className="w-[120px] text-foreground">Tipo</TableHead>
+                      <TableHead className="w-[160px] text-foreground">Plan</TableHead>
+                      <TableHead className="w-[120px] text-foreground">Estado</TableHead>
                     </TableRow>
-                  ))
-                ) : (
-                  <TableRow><TableCell colSpan={5} className="text-center h-24">No hay instituciones registradas.</TableCell></TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-      </BlurFade>
-
-      {/* Modal de Creación */}
-      <ModalOverlay isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
-        <CardHeader>
-          <CardTitle>Registrar Nueva Institución</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label>Nombre de la Institución</Label>
-              <Input name="name" value={formData.name} onChange={handleChange} required placeholder="Ej. Universidad Central" />
-            </div>
-            
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Código Único</Label>
-                <Input name="code" value={formData.code} onChange={handleChange} required placeholder="Ej. UCE" />
+                  </TableHeader>
+                  <TableBody>
+                    {(filteredInstitutions.length ? filteredInstitutions : []).map((inst) => (
+                      <TableRow key={inst._id}>
+                        <TableCell className="font-medium whitespace-nowrap">{inst.name}</TableCell>
+                        <TableCell className="text-sm text-foreground">{inst.code}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline">{inst.type === 'university' ? 'Universidad' : 'Colegio'}</Badge>
+                        </TableCell>
+                        <TableCell className="text-sm text-foreground">{inst.plan?.name || <span className="text-muted-foreground text-xs">N/A</span>}</TableCell>
+                        <TableCell>
+                          <Badge className={inst.isActive ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300" : "bg-red-100 text-red-800"}>
+                            {inst.isActive ? "Activo" : "Inactivo"}
+                          </Badge>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    {(!filteredInstitutions || filteredInstitutions.length === 0) && (
+                      <TableRow>
+                        <TableCell colSpan={5} className="text-center py-6 text-muted-foreground">
+                          No se encontraron instituciones.
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
               </div>
-              <div className="space-y-2">
-                <Label>Tipo</Label>
-                <SelectNative name="type" value={formData.type} onChange={handleChange}>
-                  <option value="university">Universidad</option>
-                  <option value="high_school">Colegio</option>
-                </SelectNative>
-              </div>
-            </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-            <div className="space-y-2">
-              <Label>Máx. Estudiantes por Sección</Label>
-              <Input type="number" name="maxStudentsPerSection" value={formData.maxStudentsPerSection} onChange={handleChange} required />
-            </div>
+        {/* --- TAB PLANES --- */}
+        <TabsContent value="plans" className="mt-4">
+           <div className="flex justify-between items-center mb-4">
+               <h2 className="text-xl font-semibold">Catálogo de Planes</h2>
+               <Dialog open={openPlanModal} onOpenChange={setOpenPlanModal}>
+                  <DialogTrigger asChild><Button variant="outline" className="gap-2"><Plus size={16}/> Crear Plan</Button></DialogTrigger>
+                  <DialogContent>
+                      <DialogHeader><DialogTitle>Nuevo Plan de Suscripción</DialogTitle></DialogHeader>
+                      <form onSubmit={submitPlan} className="space-y-4">
+                          <div className="space-y-1"><Label>Nombre del Plan</Label><Input value={planData.name} onChange={e => setPlanData({...planData, name: e.target.value})} required placeholder="Ej: Plan Básico" /></div>
+                          <div className="grid grid-cols-2 gap-4">
+                              <div className="space-y-1"><Label>Código (ID)</Label><Input value={planData.code} onChange={e => setPlanData({...planData, code: e.target.value})} required placeholder="BASIC_01" /></div>
+                              <div className="space-y-1"><Label>Precio</Label><Input type="number" value={planData.price} onChange={e => setPlanData({...planData, price: e.target.value})} required /></div>
+                          </div>
+                          <div className="space-y-1">
+                            <Label>Ciclo de Facturación</Label>
+                            {/* SELECT CUSTOM 3: Ciclo */}
+                            <Select 
+                                value={planData.billingCycle} 
+                                onValueChange={(val) => setPlanData({...planData, billingCycle: val})}
+                            >
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Selecciona ciclo" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="monthly">Mensual</SelectItem>
+                                    <SelectItem value="yearly">Anual</SelectItem>
+                                </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="space-y-1"><Label>Límite Estudiantes</Label><Input type="number" value={planData.maxStudents} onChange={e => setPlanData({...planData, maxStudents: e.target.value})} required /></div>
+                          <Button type="submit" className="w-full">Guardar Plan</Button>
+                      </form>
+                  </DialogContent>
+              </Dialog>
+          </div>
+          
+          <div className="grid md:grid-cols-3 gap-6">
+              {plans && plans.map((plan) => (
+                  <Card key={plan._id} className="border-t-4 border-t-primary shadow-sm hover:shadow-md transition-shadow relative overflow-hidden">
+                      <CardHeader>
+                          <CardTitle className="flex justify-between items-start">
+                              {plan.name}
+                          </CardTitle>
+                          <Badge variant="secondary" className="mt-2 w-fit">{plan.code}</Badge>
+                          <div className="text-3xl font-bold mt-4">${plan.price} <span className="text-sm font-normal text-muted-foreground">/ {plan.billingCycle === 'monthly' ? 'mes' : 'año'}</span></div>
+                      </CardHeader>
+                      <CardContent>
+                          <ul className="text-sm space-y-2 text-muted-foreground">
+                              <li className="flex items-center gap-2">
+                                <Users size={16} className="text-primary"/> 
+                                Hasta {plan.limits?.maxStudents} estudiantes
+                              </li>
+                          </ul>
+                      </CardContent>
+                  </Card>
+              ))}
+          </div>
+        </TabsContent>
 
-            {/* Checkboxes de Configuración */}
-            <div className="space-y-3 pt-2">
-              <div className="flex items-center gap-2">
-                <input 
-                  type="checkbox" 
-                  id="allowParentAccess" 
-                  name="allowParentAccess" 
-                  checked={formData.allowParentAccess} 
-                  onChange={handleChange}
-                  className="rounded border-gray-300"
-                />
-                <Label htmlFor="allowParentAccess" className="cursor-pointer">Permitir acceso a padres</Label>
-              </div>
-              
-              <div className="flex items-center gap-2">
-                <input 
-                  type="checkbox" 
-                  id="requiresPrerequisites" 
-                  name="requiresPrerequisites" 
-                  checked={formData.requiresPrerequisites} 
-                  onChange={handleChange}
-                  className="rounded border-gray-300"
-                />
-                <Label htmlFor="requiresPrerequisites" className="cursor-pointer">Habilitar sistema de prerrequisitos</Label>
-              </div>
-            </div>
-
-            <Button type="submit" className="w-full mt-4" disabled={isLoading}>
-              {isLoading ? "Creando..." : "Crear Institución"}
-            </Button>
-          </form>
-        </CardContent>
-      </ModalOverlay>
+      </Tabs>
     </div>
   );
 };

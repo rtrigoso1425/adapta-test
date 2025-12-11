@@ -64,7 +64,7 @@ const ModalOverlay = ({ isOpen, onClose, children }) => {
 
   return (
     <div style={modalStyles.overlay} onClick={onClose}>
-      <div style={modalStyles.modalContent} onClick={(e) => e.stopPropagation()}>
+      <div style={modalStyles.modalContent} className="hide-scrollbar" onClick={(e) => e.stopPropagation()}>
         <button
           onClick={onClose}
           style={modalStyles.closeButton}
@@ -1032,13 +1032,38 @@ const modalStyles = {
     alignItems: "center",
     justifyContent: "center",
     zIndex: 1000,
+    padding: "20px",
   },
-  modal: {
-    background: "white",
-    padding: "25px",
-    borderRadius: "8px",
-    width: "500px",
-    boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
+  // El contenedor interno del modal; puede scrollear si su contenido excede la altura de la ventana
+  modalContent: {
+    // mantener fondo transparente (permitir que el `Card` interno maneje el fondo)
+    background: "transparent",
+    padding: "20px",
+    borderRadius: "12px",
+    width: "100%",
+    maxWidth: "680px",
+    // permitir que la sombra la gestione el `Card` interno; mantener ligera sombra por defecto
+    boxShadow: "none",
+    // clave para que el calendario se vea completo: limitar altura y permitir scroll dentro del modal
+    maxHeight: "90vh",
+    overflowY: "auto",
+    position: "relative",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  // boton cerrar dentro del modal
+  closeButton: {
+    position: "absolute",
+    top: "12px",
+    right: "12px",
+    background: "transparent",
+    border: "none",
+    cursor: "pointer",
+    padding: "6px",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
   },
 };
 

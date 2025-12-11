@@ -19,39 +19,73 @@ const getAvailableInstitutions = async (req, res, next) => {
 const loginUser = async (req, res, next) => {
   try {
     const { email, password, institutionId } = req.body;
-    if (!institutionId || !email || !password) {
+
+    // 1. CORRECCIÓN: Validar SOLO email y password al inicio
+    // Eliminamos institutionId de esta validación inicial
+    if (!email || !password) {
       return res
         .status(400)
-        .json({ message: "Email, contraseña e institución son requeridos" });
+        .json({ message: "Email y contraseña son requeridos" });
     }
-    const user = await User.findOne({
-      email,
-      institution: institutionId,
-    }).populate("institution");
+
+    let user;
+
+    // 2. ESTRATEGIA DE BÚSQUEDA
+    if (institutionId) {
+      // A) Login Estándar (Usuario de institución)
+      user = await User.findOne({
+        email,
+        institution: institutionId,
+      }).populate("institution");
+    } else {
+      // B) Login Superadmin (Sin institución)
+      // Buscamos por email Y rol 'superadmin' explícitamente
+      user = await User.findOne({
+        email,
+        role: "superadmin",
+      }).populate("institution");
+    }
+
+    // 3. Validaciones de existencia
     if (!user) {
-      return res
-        .status(401)
-        .json({ message: "Usuario no encontrado en esta institución" });
+      return res.status(401).json({
+        message: institutionId
+          ? "Usuario no encontrado en esta institución."
+          : "Credenciales inválidas o no tienes permisos de Superadmin.",
+      });
     }
+
     if (!(await user.matchPassword(password))) {
       return res.status(401).json({ message: "Contraseña incorrecta" });
     }
-    if (!user.institution.isActive) {
-      return res
-        .status(403)
-        .json({ message: "La institución se encuentra inactiva" });
+
+    // 4. Validación de estado de institución (solo si no es superadmin)
+    if (user.role !== "superadmin") {
+      if (!user.institution || !user.institution.isActive) {
+        return res
+          .status(403)
+          .json({ message: "La institución se encuentra inactiva o no existe." });
+      }
     }
-    const token = generateToken(user._id, user.institution._id);
+
+    // 5. Generar Token
+    // Si es superadmin, user.institution es undefined, así que pasamos null
+    const tokenInstitutionId = user.institution ? user.institution._id : null;
+    const token = generateToken(user._id, tokenInstitutionId);
+
+    // 6. Respuesta
     res.json({
       _id: user._id,
       name: user.name,
       email: user.email,
       role: user.role,
-      institution: {
-        _id: user.institution._id,
-        name: user.institution.name,
-        type: user.institution.type,
-      },
+      institution: user.institution
+        ? {
+            _id: user.institution._id,
+            name: user.institution.name,
+            type: user.institution.type,
+          }
+        : null,
       token,
     });
   } catch (error) {

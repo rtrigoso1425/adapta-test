@@ -25,14 +25,16 @@ import { AssignmentCard } from "@/components/AssignmentCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { LessonView } from "@/components/LessonView";
-import { EvaluationView } from "@/components/EvaluationView"; // <-- 1. Importar EvaluationView
+import { EvaluationView } from "@/components/EvaluationView"; 
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { Link } from "react-router-dom";
 import { createPortal } from "react-dom";
 import { X } from "lucide-react";
+import { Label } from "@/components/ui/label";
+import { useValidateId } from '../hooks/useValidateId';
 
-
+// ... (El componente AssignmentModal se mantiene IGUAL, ya que funciona bien para vista individual)
 const AssignmentModal = ({ assignment, onClose }) => {
   const dispatch = useDispatch();
   const { mySubmission, isLoading } = useSelector((state) => state.submissions);
@@ -40,7 +42,6 @@ const AssignmentModal = ({ assignment, onClose }) => {
 
   useEffect(() => {
     if (assignment?.section && assignment?._id) {
-      // Creamos el objeto con ambos IDs
       const submissionDetails = {
         sectionId: assignment.section,
         assignmentId: assignment._id,
@@ -61,182 +62,172 @@ const AssignmentModal = ({ assignment, onClose }) => {
     )
       .unwrap()
       .then(() => {
-        onClose(); // Cierra el modal si la entrega fue exitosa
+        setContent("");
+        onClose();
       });
   };
-
-  // --- Lógica para decidir qué mostrar dentro del modal ---
+  
+  // ... (Resto del renderizado del Modal igual que tu código original)
   const renderContent = () => {
     if (isLoading) {
-      return <p className="text-muted-foreground">Verificando estado de la entrega...</p>;
+      return <p className="text-muted-foreground text-center py-8">Verificando estado de la entrega...</p>;
     }
 
     if (mySubmission) {
-      // Si ya existe una entrega, mostramos la información
       return (
-        <div className="space-y-4">
+        <div className="space-y-6">
+          <div className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
+            <h3 className="text-lg font-semibold text-green-900 dark:text-green-100 mb-3">
+              ✓ Tarea Entregada
+            </h3>
+            <div className="space-y-2 text-sm">
+              <div>
+                <p className="text-green-700 dark:text-green-300 font-medium">Estado:</p>
+                <p className="text-green-600 dark:text-green-400">Entregada</p>
+              </div>
+              {mySubmission.createdAt && (
+                <div>
+                  <p className="text-green-700 dark:text-green-300 font-medium">Fecha de Entrega:</p>
+                  <p className="text-green-600 dark:text-green-400">
+                    {new Date(mySubmission.createdAt).toLocaleDateString('es-ES', {
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
           <div>
-            <h3 className="text-lg font-semibold text-foreground mb-2">Tu Entrega</h3>
-            <div className="bg-muted border border-slate-200 dark:border-zinc-700 rounded-lg p-4 text-sm text-foreground whitespace-pre-wrap max-h-48 overflow-y-auto">
+            <h4 className="text-base font-semibold text-foreground mb-3">Tu Respuesta</h4>
+            <div className="bg-muted border border-slate-200 dark:border-zinc-700 rounded-lg p-4 text-sm text-foreground whitespace-pre-wrap max-h-64 overflow-y-auto">
               {mySubmission.content}
             </div>
           </div>
-          
           <hr className="border-slate-200 dark:border-zinc-700" />
-          
           <div>
-            <h4 className="text-base font-semibold text-foreground mb-3">Calificación</h4>
+            <h4 className="text-base font-semibold text-foreground mb-3">Calificación del Profesor</h4>
             {mySubmission.grade != null ? (
-              <div className="space-y-2">
+              <div className="space-y-3 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
                 <div>
                   <p className="text-sm text-muted-foreground">Nota:</p>
-                  <p className="text-lg font-bold text-primary">{mySubmission.grade}</p>
+                  <p className="text-2xl font-bold text-primary mt-1">{mySubmission.grade}</p>
                 </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Feedback del Profesor:</p>
-                  <p className="text-sm text-foreground mt-1">
-                    {mySubmission.feedback || "Sin comentarios."}
-                  </p>
-                </div>
+                {mySubmission.feedback && (
+                  <div>
+                    <p className="text-sm font-medium text-foreground">Comentarios:</p>
+                    <p className="text-sm text-foreground mt-2 bg-card p-3 rounded border border-slate-200 dark:border-zinc-700">
+                      {mySubmission.feedback}
+                    </p>
+                  </div>
+                )}
               </div>
             ) : (
-              <p className="text-sm text-muted-foreground italic">
-                Tu tarea ha sido entregada y está pendiente de calificación.
-              </p>
+              <div className="bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/20 dark:to-orange-950/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
+                <p className="text-sm text-amber-700 dark:text-amber-300 italic font-medium">
+                  ⏳ Tu tarea ha sido entregada y está pendiente de calificación.
+                </p>
+              </div>
             )}
           </div>
-
           <div className="flex justify-end gap-2 pt-4 border-t border-slate-200 dark:border-zinc-700">
-            <Button
-              type="button"
-              onClick={onClose}
-              variant="default"
-              className="w-full"
-            >
+            <Button type="button" onClick={onClose} variant="default" className="w-full">
               Cerrar
             </Button>
           </div>
         </div>
       );
     } else {
-      // Si no hay entrega, mostramos el formulario
       return (
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="submission-content" className="text-sm font-medium text-foreground">
-              Tu Respuesta:
-            </Label>
-            <textarea
-              id="submission-content"
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              required
-              placeholder="Escribe tu respuesta aquí..."
-              className="w-full px-3 py-2.5 border rounded-lg bg-card text-foreground focus-visible:ring-2 focus-visible:outline-none resize-none"
-              rows="8"
-            />
+        <div className="space-y-4">
+          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+            <p className="text-sm text-blue-700 dark:text-blue-300 font-medium">
+              📝 Esta tarea aún no ha sido entregada. Completa el formulario y envía tu respuesta.
+            </p>
           </div>
-
-          <div className="flex justify-end gap-2 pt-4 border-t border-slate-200 dark:border-zinc-700">
-            <Button
-              type="button"
-              onClick={onClose}
-              variant="outline"
-              className="w-full"
-            >
-              Cancelar
-            </Button>
-            <Button
-              type="submit"
-              variant="default"
-              disabled={isLoading}
-              className="w-full"
-            >
-              {isLoading ? "Enviando..." : "Entregar Tarea"}
-            </Button>
-          </div>
-        </form>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="submission-content" className="text-sm font-medium text-foreground">
+                Tu Respuesta
+              </Label>
+              <textarea
+                id="submission-content"
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
+                required
+                placeholder="Escribe tu respuesta aquí..."
+                className="w-full px-3 py-2.5 border rounded-lg bg-card text-foreground focus-visible:ring-2 focus-visible:outline-none resize-none min-h-[200px] border-slate-200 dark:border-zinc-700"
+              />
+              <p className="text-xs text-muted-foreground">
+                Caracteres: {content.length}
+              </p>
+            </div>
+            <div className="flex justify-end gap-2 pt-4 border-t border-slate-200 dark:border-zinc-700">
+              <Button type="button" onClick={() => { setContent(""); onClose(); }} variant="outline" className="w-full">
+                Cancelar
+              </Button>
+              <Button type="submit" variant="default" disabled={isLoading || !content.trim()} className="w-full">
+                {isLoading ? "Enviando..." : "Entregar Tarea"}
+              </Button>
+            </div>
+          </form>
+        </div>
       );
     }
   };
 
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60">
-      <div className="relative w-full max-w-md max-h-[90vh] overflow-y-auto rounded-lg bg-card border border-slate-200 dark:border-zinc-700 shadow-xl">
-        {/* Header */}
+      <div className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-card border border-slate-200 dark:border-zinc-700 shadow-xl">
         <div className="sticky top-0 bg-card border-b border-slate-200 dark:border-zinc-700 p-4 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-foreground">
-            Tarea: {assignment.title}
-          </h2>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-muted rounded-lg text-foreground transition"
-            aria-label="Cerrar"
-          >
+          <div>
+            <h2 className="text-lg font-semibold text-foreground">{assignment.title}</h2>
+            <p className="text-xs text-muted-foreground mt-1">
+              {assignment.instructions ? assignment.instructions.substring(0, 80) + "..." : "Sin descripción"}
+            </p>
+          </div>
+          <button onClick={onClose} className="p-2 hover:bg-muted rounded-lg text-foreground transition" aria-label="Cerrar">
             <X size={20} />
           </button>
         </div>
-
-        {/* Content */}
-        <div className="p-4">
-          <div className="mb-4">
-            <p className="text-sm text-foreground">
-              <strong>Instrucciones:</strong>{" "}
-            </p>
-            <p className="text-sm text-muted-foreground mt-1">
-              {assignment.instructions || "No se proporcionaron instrucciones."}
-            </p>
-          </div>
-
-          <hr className="border-slate-200 dark:border-zinc-700 my-4" />
-
-          {renderContent()}
-        </div>
+        <div className="p-6">{renderContent()}</div>
       </div>
     </div>,
     document.body
   );
 };
 
+
 // ===================================================================================
 //  COMPONENTE PRINCIPAL: Página de Aprendizaje del Estudiante
 // ===================================================================================
 const LearningPage = () => {
   const { id: sectionId } = useParams();
+  const isValidId = useValidateId(sectionId); // ← Validar ID
   const dispatch = useDispatch();
-  const [viewingLesson, setViewingLesson] = useState(null); // Lección seleccionada
-  const [currentLessonList, setCurrentLessonList] = useState([]); // Lista de lecciones del módulo
-  const [viewingEvaluation, setViewingEvaluation] = useState(null); // <-- 2. Estado para evaluación
-
+  const [viewingLesson, setViewingLesson] = useState(null);
+  const [currentLessonList, setCurrentLessonList] = useState([]);
+  const [viewingEvaluation, setViewingEvaluation] = useState(null);
   const [selectedAssignment, setSelectedAssignment] = useState(null);
+  
+  // 1. ESTADO LOCAL PARA MAPEAR ENTREGAS (La solución clave)
+  const [submissionsStatusMap, setSubmissionsStatusMap] = useState({});
 
   // Selectores de Redux
   const { section, isLoading: isLoadingSection } = useSelector((state) => state.learning);
-  const { modules, isLoading: isLoadingModules, lessonsByModule } = useSelector((state) => state.content); // <-- 3. Añadir lessonsByModule
+  const { modules, isLoading: isLoadingModules, lessonsByModule } = useSelector((state) => state.content);
   const { assignments, isLoading: isLoadingAssignments } = useSelector((state) => state.assignments);
-  const { mySubmissionsMap } = useSelector((state) => {
-    // ... (lógica del selector sin cambios) ...
-    const map = {};
-    if (Array.isArray(state.submissions.submissions)) { 
-       state.submissions.submissions.forEach(sub => {
-         if(sub && sub.assignment) {
-           map[sub.assignment] = sub;
-         }
-       });
-    } else if (state.submissions.mySubmission) { 
-      const sub = state.submissions.mySubmission;
-      if(sub && sub.assignment) {
-        map[sub.assignment] = sub;
-      }
-    }
-    return { mySubmissionsMap: map };
-  });
 
-  // --- EFECTO 1: Carga los datos principales de la página ---
+  // --- EFECTO 1: Carga los datos principales ---
   useEffect(() => {
-    dispatch(getSectionDetails(sectionId));
-    dispatch(getModulesForSection(sectionId));
-    dispatch(getAssignmentsForSection(sectionId));
+    if (isValidId) {
+      dispatch(getSectionDetails(sectionId));
+      dispatch(getModulesForSection(sectionId));
+      dispatch(getAssignmentsForSection(sectionId));
+    }
     
     return () => {
       dispatch(resetLearning());
@@ -244,26 +235,59 @@ const LearningPage = () => {
       dispatch(resetAssignments());
       dispatch(resetSubmissions());
     };
-  }, [dispatch, sectionId]);
+  }, [dispatch, sectionId, isValidId]);
 
-  // --- 4. EFECTO 2: Carga los datos ANIDADOS (lecciones) ---
-  // Este hook se activa cuando `modules` (del Efecto 1) termina de cargar.
+  // --- EFECTO 2: Carga lecciones ---
   useEffect(() => {
     if (modules && modules.length > 0) {
-      // Dispara la carga de las lecciones completadas para toda la sección
       dispatch(getCompletedLessons(sectionId));
-
-      // Dispara la carga de lecciones para CADA módulo
       modules.forEach(module => {
-        // Solo fetchear si no están ya en el estado (por si acaso)
         if (!lessonsByModule[module._id]) {
           dispatch(getLessonsForModule(module._id));
         }
       });
     }
-  }, [modules, dispatch, sectionId, lessonsByModule]); // Depende de `modules`
+  }, [modules, dispatch, sectionId, lessonsByModule]);
 
-const handleSelectLesson = (lesson, lessonList) => {
+  // --- EFECTO 3 (CORREGIDO): Cargar entregas y guardarlas en estado LOCAL ---
+  useEffect(() => {
+    const fetchAllSubmissions = async () => {
+      if (assignments && assignments.length > 0) {
+        const results = {};
+        
+        // Creamos un array de promesas para esperar a que todas terminen
+        const promises = assignments.map(async (assignment) => {
+          try {
+            // Usamos .unwrap() para obtener el resultado crudo sin depender de que
+            // el estado global de Redux se actualice (evitando la condición de carrera)
+            const result = await dispatch(
+              getMySubmission({
+                sectionId: assignment.section,
+                assignmentId: assignment._id,
+              })
+            ).unwrap();
+            
+            // Si la promesa se resuelve (hay entrega), la guardamos en el mapa
+            results[assignment._id] = result;
+          } catch (error) {
+            // Si da error (ej. 404 no encontrado), simplemente no guardamos nada para esta ID
+            // Esto significa que el estudiante no ha entregado la tarea aún.
+            // console.log(`No submission found for assignment ${assignment._id}`);
+          }
+        });
+
+        await Promise.all(promises);
+        setSubmissionsStatusMap(results);
+      }
+    };
+
+    fetchAllSubmissions();
+    
+    // Agregamos selectedAssignment como dependencia para que si el usuario entrega una tarea
+    // y cierra el modal, la lista se actualice.
+  }, [assignments, dispatch, selectedAssignment]);
+
+  const handleSelectLesson = (lesson, lessonList) => {
     setViewingLesson(lesson);
     setCurrentLessonList(lessonList);
     setViewingEvaluation(null);
@@ -271,16 +295,15 @@ const handleSelectLesson = (lesson, lessonList) => {
 
   const handleStartEvaluation = (moduleId) => {
     setViewingEvaluation(moduleId);
-    setViewingLesson(null); // Asegura que la otra vista esté cerrada
+    setViewingLesson(null);
   };
 
-const handleBackToList = () => {
+  const handleBackToList = () => {
     setViewingLesson(null);
-    setViewingEvaluation(null); // Cierra ambas vistas
+    setViewingEvaluation(null);
   };
 
   if (isLoadingSection || !section) {
-    // ... (Skeleton de carga de página sin cambios)
     return (
       <div className="p-8">
         <Skeleton className="h-10 w-1/2 mb-4" />
@@ -294,18 +317,14 @@ const handleBackToList = () => {
   return (
     <div className="animate-in fade-in duration-300 p-0 lg:p-0">
       
-      {/* 1. Header de la Página (ACTUALIZADO) */}
+      {/* Header */}
       <div className="mb-6">
-        
-        {/* --- 3. BOTÓN "VOLVER" AÑADIDO --- */}
         <Button asChild variant="outline" size="sm" className="mb-4">
           <Link to="/dashboard">
             <ArrowLeft className="h-4 w-4 mr-2" />
             Volver a cursos
           </Link>
         </Button>
-        
-        {/* Contenedor para el resto del header */}
         <div>
           <a 
             href={`http://localhost:5000${section.course.syllabus}`}
@@ -323,19 +342,15 @@ const handleBackToList = () => {
         </div>
       </div>
 
-      {/* 2. Sistema de Pestañas (sin cambios) */}
+      {/* Tabs */}
       <Tabs defaultValue="content" className="w-full">
         <TabsList className="grid w-full grid-cols-2 sm:w-[400px]">
           <TabsTrigger value="content">Contenido del Curso</TabsTrigger>
           <TabsTrigger value="assignments">Tareas y Calificaciones</TabsTrigger>
         </TabsList>
         
-        {/* Pestaña de Contenido (Módulos) */}
         <TabsContent value="content" className="mt-6">
-          {/* --- 4. LÓGICA DE RENDERIZADO CONDICIONAL (3 ESTADOS) --- */}
-          
           {viewingLesson ? (
-            // B. Muestra la VISTA DE LECCIÓN
             <LessonView
               lesson={viewingLesson}
               lessonList={currentLessonList}
@@ -343,13 +358,11 @@ const handleBackToList = () => {
               setViewingLesson={setViewingLesson}
             />
           ) : viewingEvaluation ? (
-            // C. Muestra la VISTA DE EVALUACIÓN
             <EvaluationView
               moduleId={viewingEvaluation}
               onBackToList={handleBackToList}
             />
           ) : (
-            // A. Muestra la LISTA DE MÓDULOS
             <Card>
               <CardHeader>
                 <CardTitle>Módulos de Aprendizaje</CardTitle>
@@ -370,7 +383,7 @@ const handleBackToList = () => {
                         key={module._id} 
                         module={module} 
                         onSelectLesson={handleSelectLesson}
-                        onStartEvaluation={handleStartEvaluation} // Pasa el nuevo handler
+                        onStartEvaluation={handleStartEvaluation}
                       />
                     ))}
                   </div>
@@ -380,9 +393,7 @@ const handleBackToList = () => {
           )}
         </TabsContent>
         
-        {/* Pestaña de Tareas (sin cambios) */}
         <TabsContent value="assignments" className="mt-6">
-          {/* ... (contenido de la pestaña de tareas sin cambios) ... */}
            <Card>
              <CardHeader>
               <CardTitle>Tareas</CardTitle>
@@ -402,7 +413,9 @@ const handleBackToList = () => {
                     <AssignmentCard 
                       key={assignment._id}
                       assignment={assignment}
-                      mySubmission={mySubmissionsMap[assignment._id]}
+                      // AQUÍ ESTÁ EL CAMBIO CLAVE:
+                      // Usamos el mapa local en lugar del selector de Redux que estaba fallando
+                      mySubmission={submissionsStatusMap[assignment._id]} 
                       onOpen={() => setSelectedAssignment(assignment)}
                     />
                   ))}
@@ -413,7 +426,6 @@ const handleBackToList = () => {
         </TabsContent>
       </Tabs>
 
-      {/* El modal se renderiza aquí (sin cambios) */}
       {selectedAssignment && (
         <AssignmentModal
           assignment={selectedAssignment}
@@ -424,48 +436,9 @@ const handleBackToList = () => {
   );
 };
 
-// --- Estilos ---
+// Styles (igual que antes)
 const styles = {
-  layout: { display: "flex", gap: "20px" },
-  assignmentItem: {
-    borderBottom: "1px solid #eee",
-    padding: "10px 0",
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  modalOverlay: {
-    position: "fixed",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: "rgba(0, 0, 0, 0.7)",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    zIndex: 1000,
-  },
-  modalContent: {
-    background: "white",
-    padding: "25px",
-    borderRadius: "8px",
-    width: "90%",
-    maxWidth: "600px",
-  },
-  textarea: {
-    width: "100%",
-    height: "200px",
-    marginTop: "10px",
-    padding: "10px",
-    boxSizing: "border-box",
-  },
-  modalActions: {
-    display: "flex",
-    justifyContent: "flex-end",
-    gap: "10px",
-    marginTop: "20px",
-  },
+  // ... tus estilos
 };
 
 export default LearningPage;

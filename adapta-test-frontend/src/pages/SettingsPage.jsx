@@ -1,55 +1,13 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-
-const THEME_KEY = "app_theme_preference"; // 'light' | 'dark' | 'system'
-
-function applyTheme(pref) {
-  if (pref === "dark") {
-    document.documentElement.classList.add("dark");
-  } else if (pref === "light") {
-    document.documentElement.classList.remove("dark");
-  } else {
-    // system
-    document.documentElement.classList.remove("dark");
-    const isDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
-    if (isDark) document.documentElement.classList.add("dark");
-  }
-}
+import { useTheme } from '../hooks/useTheme';
 
 export default function SettingsPage() {
   const navigate = useNavigate();
-  const [theme, setTheme] = useState(() => {
-    return localStorage.getItem(THEME_KEY) || "system";
-  });
-
-  useEffect(() => {
-    applyTheme(theme);
-    // if system, listen for changes
-    let mq;
-    const handleChange = () => {
-      if (theme === "system") applyTheme("system");
-    };
-    if (window.matchMedia) {
-      mq = window.matchMedia("(prefers-color-scheme: dark)");
-      mq.addEventListener?.("change", handleChange);
-      mq.addListener?.(handleChange);
-    }
-    return () => {
-      if (mq) {
-        mq.removeEventListener?.("change", handleChange);
-        mq.removeListener?.(handleChange);
-      }
-    };
-  }, [theme]);
-
-  const onChange = (value) => {
-    setTheme(value);
-    localStorage.setItem(THEME_KEY, value);
-    applyTheme(value);
-  };
+  const { theme, setTheme } = useTheme();
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -73,22 +31,22 @@ export default function SettingsPage() {
               <Label className="text-sm">Selecciona el modo de color</Label>
               <div className="mt-2 flex gap-3">
                 <button
-                  onClick={() => onChange("light")}
-                  className={`px-4 py-2 rounded-md ${theme === "light" ? "bg-primary text-primary-foreground" : "bg-card/50 text-foreground"}`}
+                  onClick={() => setTheme('light')}
+                  className={`px-4 py-2 rounded-md transition-all ${theme === 'light' ? 'bg-primary text-primary-foreground shadow-md' : 'bg-card/50 text-foreground hover:bg-card'}`}
                 >
-                  Claro
+                  ☀️ Claro
                 </button>
                 <button
-                  onClick={() => onChange("dark")}
-                  className={`px-4 py-2 rounded-md ${theme === "dark" ? "bg-primary text-primary-foreground" : "bg-card/50 text-foreground"}`}
+                  onClick={() => setTheme('dark')}
+                  className={`px-4 py-2 rounded-md transition-all ${theme === 'dark' ? 'bg-primary text-primary-foreground shadow-md' : 'bg-card/50 text-foreground hover:bg-card'}`}
                 >
-                  Oscuro
+                  🌙 Oscuro
                 </button>
                 <button
-                  onClick={() => onChange("system")}
-                  className={`px-4 py-2 rounded-md ${theme === "system" ? "bg-primary text-primary-foreground" : "bg-card/50 text-foreground"}`}
+                  onClick={() => setTheme('system')}
+                  className={`px-4 py-2 rounded-md transition-all ${theme === 'system' ? 'bg-primary text-primary-foreground shadow-md' : 'bg-card/50 text-foreground hover:bg-card'}`}
                 >
-                  Sistema
+                  💻 Sistema
                 </button>
               </div>
               <p className="text-xs text-muted-foreground mt-2">

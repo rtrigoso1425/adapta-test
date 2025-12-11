@@ -12,9 +12,6 @@ import { Progress } from "@/components/ui/progress";
 import { ArrowLeft, CheckCircle2, XCircle, Target } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-// NOTA: Este componente es casi idéntico a la `EvaluationPage` anterior,
-// pero recibe props en lugar de usar hooks de router.
-
 export function EvaluationView({ moduleId, onBackToList }) {
   const dispatch = useDispatch();
   
@@ -35,36 +32,41 @@ export function EvaluationView({ moduleId, onBackToList }) {
 
   // --- 1. Inicio y Reseteo ---
   useEffect(() => {
-    // Usa el moduleId de las props para iniciar la evaluación
     if (moduleId) {
       dispatch(startEvaluation(moduleId));
     }
     return () => {
       dispatch(reset());
     };
-  }, [dispatch, moduleId]); // Depende del prop
+  }, [dispatch, moduleId]);
 
   // --- 2. Manejo de Errores ---
   useEffect(() => {
     if (isError) {
       alert(message);
-      onBackToList(); // Vuelve a la lista si hay un error
+      onBackToList();
     }
   }, [isError, message, onBackToList]);
 
-  // --- 3. Lógica de Feedback y Transición ---
+  // --- 3. Lógica de Feedback ---
   useEffect(() => {
     if (lastResult) {
+      // Activamos el color (verde/rojo)
       setFeedback(lastResult.isCorrect ? 'correct' : 'incorrect');
+      
       const timer = setTimeout(() => {
+        // Al terminar el tiempo, limpiamos el feedback
         setFeedback(null);
         setSelectedOptionId(null);
+        // NOTA: Al limpiar 'feedback', el componente se re-renderizará
+        // y el número de pregunta avanzará automáticamente gracias a la lógica de abajo.
       }, 1500);
+      
       return () => clearTimeout(timer);
     }
   }, [lastResult, session?.sessionId]);
 
-  // --- 4. Handler para Enviar Respuesta ---
+  // --- 4. Handler para Enviar ---
   const handleAnswerSubmit = (optionId) => {
     if (feedback || isLoading) return; 
     setSelectedOptionId(optionId);
@@ -77,21 +79,39 @@ export function EvaluationView({ moduleId, onBackToList }) {
     }));
   };
 
-  // --- 5. Cálculo del Progreso ---
-  const questionsAnswered = (session?.score?.correct || 0) + (session?.score?.incorrect || 0);
+  // --- 5. LÓGICA BLINDADA PARA EL NÚMERO DE PREGUNTA ---
+  
+  // A) Calcular totales seguros (evita NaN o undefined)
+  const scoreCorrect = session?.score?.correct || 0;
+  const scoreIncorrect = session?.score?.incorrect || 0;
+  const totalAnswered = scoreCorrect + scoreIncorrect; // Total respondidas según base de datos
+
+  // B) Calcular el número visual
+  // Si 'feedback' es true: Acabamos de responder. El servidor ya sumó +1 al score,
+  // pero visualmente seguimos en la pregunta que acabamos de hacer.
+  // Por tanto, el número es igual a 'totalAnswered'.
+  // Si 'feedback' es false: Ya pasamos a la siguiente. El número es 'totalAnswered + 1'.
+  let calculatedNumber = feedback ? totalAnswered : totalAnswered + 1;
+
+  // C) Seguridad anti-cero
+  // Nunca mostrar "Pregunta 0". Mínimo 1.
+  const displayQuestionNumber = Math.max(1, calculatedNumber);
+
+  // D) Progreso
   const totalQuestions = user?.institution?.type === 'high_school' ? 10 : 15;
-  const progressPercent = (questionsAnswered / totalQuestions) * 100;
+  // Usamos totalAnswered para la barra de progreso (es más preciso)
+  const progressPercent = (totalAnswered / totalQuestions) * 100;
+
 
   // --- RENDERIZADO CONDICIONAL ---
 
-  // Estado 1: Cargando la primera pregunta
-  if (isLoading && !currentQuestion && !isCompleted) {
+  // 1. Cargando inicial (sin sesión o sin pregunta)
+  if ((isLoading && !currentQuestion && !isCompleted) || !session) {
     return <EvaluationSkeleton />;
   }
 
-  // Estado 2: Evaluación Completada
-  if (isCompleted && session) {
-    // Modificamos el botón de "Volver" para usar el prop
+  // 2. Completado
+  if (isCompleted) {
     return (
       <EvaluationComplete 
         session={session} 
@@ -100,26 +120,26 @@ export function EvaluationView({ moduleId, onBackToList }) {
     );
   }
 
-  // Estado 3: Mostrando una Pregunta
+  // 3. Vista de Pregunta
   if (currentQuestion) {
     return (
       <div className="max-w-2xl mx-auto">
-        {/* Botón para salir de la evaluación */}
         <Button variant="outline" size="sm" className="mb-4" onClick={onBackToList}>
           <ArrowLeft className="h-4 w-4 mr-2" />
           Volver al Contenido
         </Button>
 
-        <Card 
-          key={currentQuestion._id}
-          className="animate-in fade-in duration-500"
-        >
+        <Card key={currentQuestion._id} className="animate-in fade-in duration-500">
           <CardHeader>
             <div className="flex justify-between items-center mb-2">
-              <CardDescription>Pregunta {questionsAnswered + 1} de {totalQuestions}</CardDescription>
-              {isLoading && <span className="text-sm text-muted-foreground">Verificando...</span>}
+              <CardDescription>
+                {/* Aquí usamos la variable segura */}
+                Pregunta {displayQuestionNumber} de {totalQuestions}
+              </CardDescription>
+              {isLoading && <span className="text-sm text-muted-foreground">Procesando...</span>}
             </div>
-            <Progress value={progressPercent} className="h-2 mb-4" />
+            {/* La barra de progreso crece suavemente */}
+            <Progress value={progressPercent} className="h-2 mb-4 transition-all duration-500" />
             <CardTitle className="text-xl">{currentQuestion.questionText}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -128,12 +148,13 @@ export function EvaluationView({ moduleId, onBackToList }) {
               
               let variant = "outline";
               let statusClass = "";
+              // Lógica de colores basada en el estado 'feedback'
               if (isSelected && feedback === 'correct') {
                 variant = "default";
-                statusClass = "bg-green-600 hover:bg-green-700 text-white";
+                statusClass = "bg-green-600 hover:bg-green-700 text-white border-green-600";
               } else if (isSelected && feedback === 'incorrect') {
                 variant = "default";
-                statusClass = "bg-red-600 hover:bg-red-700 text-white";
+                statusClass = "bg-red-600 hover:bg-red-700 text-white border-red-600";
               }
 
               return (
@@ -142,7 +163,7 @@ export function EvaluationView({ moduleId, onBackToList }) {
                   variant={variant}
                   className={cn("w-full h-auto justify-start p-4 text-left whitespace-normal", statusClass)}
                   onClick={() => handleAnswerSubmit(option._id)}
-                  disabled={isLoading || feedback} 
+                  disabled={isLoading || feedback !== null} 
                 >
                   {option.text}
                 </Button>
@@ -154,11 +175,10 @@ export function EvaluationView({ moduleId, onBackToList }) {
     );
   }
 
-  // Estado Fallback
   return <EvaluationSkeleton />;
 }
 
-// Modificación para el componente de Completado, para que acepte `onBackToList`
+// Componente de Completado (Sin cambios, solo para referencia)
 function EvaluationComplete({ session, onBackToList }) { 
   const finalScore = session.finalScore || { correct: 0, incorrect: 0 };
   const finalMastery = session.finalMastery || 0;
@@ -168,10 +188,9 @@ function EvaluationComplete({ session, onBackToList }) {
       <Card>
         <CardHeader className="text-center">
           <CardTitle className="text-2xl">¡Evaluación Completada!</CardTitle>
-          <CardDescription>Estos son tus resultados finales.</CardDescription>
+          <CardDescription>Resultados finales</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          {/* Puntuación */}
           <div className="grid grid-cols-2 gap-4 text-center">
             <div className="p-4 bg-secondary rounded-lg">
               <CheckCircle2 className="h-8 w-8 text-green-500 mx-auto mb-2" />
@@ -184,8 +203,6 @@ function EvaluationComplete({ session, onBackToList }) {
               <p className="text-sm text-muted-foreground">Incorrectas</p>
             </div>
           </div>
-
-          {/* Maestría */}
           <div className="space-y-2">
             <div className="flex justify-between items-center mb-1">
               <span className="text-sm font-medium text-primary flex items-center">
@@ -198,8 +215,7 @@ function EvaluationComplete({ session, onBackToList }) {
             </div>
             <Progress value={finalMastery} className="h-3" />
           </div>
-
-          <Button className="w-full" onClick={onBackToList}> {/* <-- Botón actualizado */}
+          <Button className="w-full" onClick={onBackToList}>
             Volver al Curso
           </Button>
         </CardContent>

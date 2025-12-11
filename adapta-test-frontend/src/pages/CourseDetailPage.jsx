@@ -2,16 +2,20 @@ import { useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useParams } from 'react-router-dom';
 import { getSectionsForCourse, reset } from '../features/sections/sectionSlice';
+import { useValidateId } from '../hooks/useValidateId';
 
 const CourseDetailPage = () => {
     const dispatch = useDispatch();
-    const { id: courseId } = useParams(); // Obtiene el ID del curso desde la URL
+    const { id: courseId } = useParams();
+    const isValidId = useValidateId(courseId); // ← Validar ID
     const { sections, isLoading } = useSelector((state) => state.sections);
 
     useEffect(() => {
-        dispatch(getSectionsForCourse(courseId));
+        if (isValidId) {
+            dispatch(getSectionsForCourse(courseId));
+        }
         return () => { dispatch(reset()); };
-    }, [dispatch, courseId]);
+    }, [dispatch, courseId, isValidId]);
 
     if (isLoading) return <h3>Cargando secciones...</h3>;
 

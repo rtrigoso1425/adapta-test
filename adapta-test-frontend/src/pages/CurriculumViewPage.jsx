@@ -3,20 +3,25 @@ import { useParams, Link } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { getCareerById, reset } from '../features/careers/careerSlice';
 import { ArrowLeft, BookOpen, Clock, User, GraduationCap } from 'lucide-react';
+import { useValidateId } from '../hooks/useValidateId';
 
 const CurriculumViewPage = () => {
     const { id: careerId } = useParams();
+    const isValidId = useValidateId(careerId); // ← Validar ID
     const dispatch = useDispatch();
     
     const { myCareer: career, isLoading } = useSelector((state) => state.careers);
 
     useEffect(() => {
-        dispatch(getCareerById(careerId));
+        if (isValidId) {
+            // Hacer fetch solo si el ID es válido
+            dispatch(getCareerById(careerId));
+        }
 
         return () => {
             dispatch(reset());
         };
-    }, [dispatch, careerId]);
+    }, [dispatch, careerId, isValidId]);
 
     if (isLoading || !career) {
         return (

@@ -48,6 +48,7 @@ import {
   reset as resetSubmissions,
 } from "../features/submissions/submissionSlice";
 import { updateApprovalCriteria } from "../features/sections/sectionSlice";
+import { useValidateId } from '../hooks/useValidateId';
 
 const EMPTY_ARRAY = [];
 
@@ -924,6 +925,7 @@ const CreateQuestionModal = ({ moduleId, isOpen, onClose }) => {
   const [questionText, setQuestionText] = useState("");
   const [optionsText, setOptionsText] = useState("");
   const [correctIndex, setCorrectIndex] = useState(0);
+  const [difficulty, setDifficulty] = useState(1); // nivel 1-5
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -937,6 +939,12 @@ const CreateQuestionModal = ({ moduleId, isOpen, onClose }) => {
       if (rawOptions.length < 2) throw new Error("Mínimo 2 opciones requeridas.");
       if (correctIndex >= rawOptions.length) throw new Error("Selección correcta inválida.");
 
+      // Validar dificultad entre 1 y 5
+      const lvl = Number(difficulty);
+      if (!Number.isInteger(lvl) || lvl < 1 || lvl > 5) {
+        throw new Error("La dificultad debe ser un número entero entre 1 y 5.");
+      }
+
       const formattedOptions = rawOptions.map((text, index) => ({
         text: text,
         isCorrect: index === correctIndex
@@ -945,7 +953,7 @@ const CreateQuestionModal = ({ moduleId, isOpen, onClose }) => {
       const questionData = {
         questionText,
         options: formattedOptions,
-        difficulty: 1, 
+        difficulty: lvl,
       };
 
       await dispatch(createQuestion({ moduleId, questionData })).unwrap();
@@ -953,6 +961,7 @@ const CreateQuestionModal = ({ moduleId, isOpen, onClose }) => {
       setQuestionText("");
       setOptionsText("");
       setCorrectIndex(0);
+      setDifficulty(1);
       onClose();
 
     } catch (error) {
@@ -997,30 +1006,53 @@ const CreateQuestionModal = ({ moduleId, isOpen, onClose }) => {
                 <Label>Opciones (una por línea)</Label>
                 <textarea
                   value={optionsText}
-                  onChange={(e) => setOptionsText(e.target.value)}
+                  onChange={(e) => {
+                    setOptionsText(e.target.value);
+                    // Ajustar correctIndex si queda fuera de rango
+                    const opts = e.target.value.split("\n").map(o => o.trim()).filter(Boolean);
+                    if (correctIndex >= opts.length) setCorrectIndex(Math.max(0, opts.length - 1));
+                  }}
                   placeholder={"Lima\nArequipa\nCusco"}
                   required
                   className="w-full px-3 py-2.5 border rounded-lg bg-background text-foreground min-h-[100px] text-sm"
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label>Respuesta Correcta</Label>
-                <select
-                  value={correctIndex}
-                  onChange={(e) => setCorrectIndex(Number(e.target.value))}
-                  className="w-full px-3 py-2 border rounded-lg bg-background text-foreground text-sm"
-                >
-                  {currentOptions.length > 0 ? (
-                    currentOptions.map((opt, idx) => (
-                      <option key={idx} value={idx}>
-                        {idx + 1}. {opt}
-                      </option>
-                    ))
-                  ) : (
-                    <option disabled>Escribe opciones primero...</option>
-                  )}
-                </select>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Respuesta Correcta</Label>
+                  <select
+                    value={correctIndex}
+                    onChange={(e) => setCorrectIndex(Number(e.target.value))}
+                    className="w-full px-3 py-2 border rounded-lg bg-background text-foreground text-sm"
+                  >
+                    {currentOptions.length > 0 ? (
+                      currentOptions.map((opt, idx) => (
+                        <option key={idx} value={idx}>
+                          {idx + 1}. {opt}
+                        </option>
+                      ))
+                    ) : (
+                      <option disabled>Escribe opciones primero...</option>
+                    )}
+                  </select>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label>Dificultad (1-5)</Label>
+                  <select
+                    value={difficulty}
+                    onChange={(e) => setDifficulty(Number(e.target.value))}
+                    className="w-full px-3 py-2 border rounded-lg bg-background text-foreground text-sm"
+                    required
+                  >
+                    <option value={1}>1 - Muy Fácil</option>
+                    <option value={2}>2 - Fácil</option>
+                    <option value={3}>3 - Intermedio</option>
+                    <option value={4}>4 - Difícil</option>
+                    <option value={5}>5 - Muy Difícil</option>
+                  </select>
+                </div>
               </div>
 
               <div className="flex justify-end gap-3 mt-6">
@@ -1288,6 +1320,7 @@ const ModulesTab = ({ sectionId }) => {
 // ===================================================================================
 const SectionManagementPage = () => {
   const { id: sectionId } = useParams();
+  const isValidId = useValidateId(sectionId); // ← Validar ID
   const dispatch = useDispatch();
   const [activeTab, setActiveTab] = useState("modules");
   const { section, isLoading: isLoadingSection } = useSelector(
@@ -1295,11 +1328,13 @@ const SectionManagementPage = () => {
   );
 
   useEffect(() => {
-    dispatch(getSectionDetails(sectionId));
+    if (isValidId) {
+      dispatch(getSectionDetails(sectionId));
+    }
     return () => {
       dispatch(resetLearning());
     };
-  }, [dispatch, sectionId]);
+  }, [dispatch, sectionId, isValidId]);
 
   if (isLoadingSection || !section) {
     return (

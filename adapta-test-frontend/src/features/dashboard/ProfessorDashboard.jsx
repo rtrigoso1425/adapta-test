@@ -4,6 +4,7 @@ import { useSelector, useDispatch } from "react-redux";
 import CardFlip from "../../components/flip-card";
 import { BlurFade } from "../../components/ui/blur-fade";
 import { Book } from "lucide-react";
+import { DashboardSkeleton } from "@/components/layout/DashboardSkeleton";
 
 // La acción `getMySections` y el slice ya están preparados para funcionar
 import { getMySections, reset } from "../sections/sectionSlice";
@@ -24,7 +25,7 @@ const ProfessorDashboard = () => {
   }, [dispatch]);
 
   if (isLoading) {
-    return <h3>Cargando tus secciones asignadas...</h3>;
+    return <DashboardSkeleton />;
   }
 
   return (

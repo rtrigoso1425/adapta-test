@@ -11,7 +11,6 @@ import { HoverButton } from "../components/ui/hover-button";
 import { LogoCarousel } from "../components/ui/logo-carousel";
 import VideoPlayer from "../components/ui/video-player";
 import { Text_03 } from '../components/ui/wave-text';
-import ReactPlayer from 'react-player';
 
 const logos = [
   { 
@@ -129,11 +128,6 @@ const Header = () => {
               <li style={{ display: 'flex', alignItems: 'center' }}>
                 <HoverButton as={Link} to="/dashboard">
                   Dashboard
-                </HoverButton>
-              </li>
-              <li style={{ display: 'flex', alignItems: 'center' }}>
-                <HoverButton as={Link} to="/courses">
-                  Cursos
                 </HoverButton>
               </li>
               <li style={{ display: 'flex', alignItems: 'center' }}>

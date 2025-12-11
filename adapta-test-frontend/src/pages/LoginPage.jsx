@@ -117,13 +117,18 @@ const LoginPage = () => {
 
   const onSubmit = (e) => {
     e.preventDefault();
-    if (!institutionId) {
-      toast.error("Institución requerida", {
-        description: "Por favor, selecciona tu institución para continuar"
-      });
-      return;
-    }
-    dispatch(login(formData));
+    
+    // --- CAMBIO: Eliminamos el bloqueo estricto ---
+    // Si no hay institución, permitimos continuar. El backend decidirá si es un superadmin válido.
+    
+    // Opcional: Podrías limpiar institutionId del formData si es una cadena vacía
+    const loginPayload = {
+        email: formData.email,
+        password: formData.password,
+        institutionId: formData.institutionId || null // Enviar null si está vacío
+    };
+
+    dispatch(login(loginPayload));
   };
 
   return (

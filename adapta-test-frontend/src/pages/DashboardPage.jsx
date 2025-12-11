@@ -4,6 +4,7 @@ import ProfessorDashboard from "../features/dashboard/ProfessorDashboard";
 import StudentDashboard from "../features/dashboard/StudentDashboard";
 import AdminDashboard from "../features/dashboard/AdminDashboard";
 import CoordinatorDashboard from "../features/dashboard/CoordinatorDashboard";
+import SuperAdminDashboard from "../features/dashboard/SuperAdminDashboard";
 // Importaremos un futuro dashboard para padres
 // import ParentDashboard from "../features/dashboard/ParentDashboard";
 
@@ -16,6 +17,8 @@ const DashboardPage = () => {
 
   // El `user.role` ahora es el rol dentro de la institución, ¡así que la lógica sigue funcionando!
   switch (user.role) {
+    case "superadmin":
+      return <SuperAdminDashboard />;
     case "admin":
       return <AdminDashboard />;
     case "coordinator":

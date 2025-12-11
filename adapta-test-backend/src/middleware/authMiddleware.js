@@ -10,43 +10,53 @@ const protect = async (req, res, next) => {
     req.headers.authorization.startsWith("Bearer")
   ) {
     try {
-      // 1. Extraer el token
       token = req.headers.authorization.split(" ")[1];
-
-      // 2. Decodificar el token para obtener los IDs
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-      // 3. Buscar el usuario y popular su institución
       req.user = await User.findById(decoded.id)
         .select("-password")
         .populate("institution");
 
-      // 4. Validar que el usuario y su institución existan
-      if (!req.user || !req.user.institution) {
+      if (!req.user) {
         res.status(401);
-        throw new Error("No autorizado, usuario o institución no encontrados");
+        throw new Error("No autorizado, usuario no encontrado");
       }
 
-      // 5. Verificación de seguridad CLAVE: la institución en el token debe coincidir con la del usuario en la BD
-      if (req.user.institution._id.toString() !== decoded.institution) {
-        res.status(401);
-        throw new Error("Conflicto de token, la institución no coincide");
+      // --- CAMBIO AQUÍ ---
+      // Si es Superadmin, nos saltamos la validación de institución
+      if (req.user.role === "superadmin") {
+        // El superadmin no tiene institución, así que no validamos contra el token
+        req.institution = null; 
+        return next(); // Pase directo VIP
       }
 
-      // 6. Hacemos que el objeto completo de la institución esté disponible en `req`
+      // Validación para mortales (usuarios normales)
+      if (!req.user.institution) {
+         res.status(401);
+         throw new Error("Usuario sin institución asignada (y no es superadmin).");
+      }
+
+      // Verificar que el token pertenezca a la misma institución del usuario actual
+      // (Evita que uses un token de la Institución A para pedir datos de la Institución B si cambiaste de uni)
+      if (decoded.institution && req.user.institution._id.toString() !== decoded.institution) {
+        res.status(401);
+        throw new Error("Conflicto de token: La institución no coincide.");
+      }
+
       req.institution = req.user.institution;
-
       next();
+      // -------------------
+
     } catch (error) {
       console.error(error);
       res.status(401);
-      throw new Error("No autorizado, el token falló");
+      throw new Error("No autorizado, token fallido");
     }
   }
 
   if (!token) {
     res.status(401);
-    throw new Error("No autorizado, no se encontró un token");
+    throw new Error("No autorizado, no hay token");
   }
 };
 

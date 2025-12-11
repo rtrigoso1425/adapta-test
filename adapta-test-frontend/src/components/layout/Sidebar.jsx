@@ -417,8 +417,7 @@ export function Sidebar({ isCollapsed, onToggle }) {
             label="Instituciones"
             to="/dashboard?tab=institutions"
             active={isActive("/dashboard?tab=institutions")}
-            isCollapse
-            d={isCollapsed}
+            isCollapsed={isCollapsed}
           />
           <SidebarLink
             icon={LayoutDashboard} // Asegúrate de importar LayoutDashboard arriba
